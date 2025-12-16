@@ -22,30 +22,30 @@ const Attendance = () => {
 
 
   const fetchAllHistory = async (page = 1) => {
-      setLoading(true)
-      try {
-        
-        const usersResponse = await attendanceRepo.getAttendanceHistory(page, limit)
-        
-        const data = usersResponse.data || [];
-        
-        // Extract data from paginated response
-        setAllHistory(data)
-        filterByDate(dateFilter, data)
-        setTotalPages(usersResponse.pagination?.totalPages || 1)
-        setTotalHistory(usersResponse.pagination?.total || 0)
-        setCurrentPage(page)
-        console.log(totalHistory);
-        
-      } catch (error) {
-        message.error("Error fetching all history")
-        console.error("Fetch error:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
+    setLoading(true)
+    try {
 
-    const handlePageChange = (page: number) => {
+      const usersResponse = await attendanceRepo.getAttendanceHistory(page, limit)
+
+      const data = usersResponse.data || [];
+
+      // Extract data from paginated response
+      setAllHistory(data)
+      filterByDate(dateFilter, data)
+      setTotalPages(usersResponse.pagination?.totalPages || 1)
+      setTotalHistory(usersResponse.pagination?.total || 0)
+      setCurrentPage(page)
+      console.log(totalHistory);
+
+    } catch (error) {
+      message.error("Error fetching all history")
+      console.error("Fetch error:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePageChange = (page: number) => {
     setCurrentPage(page)
     fetchAllHistory(page)
   }
@@ -165,10 +165,10 @@ const Attendance = () => {
       render: (date: string) =>
         date
           ? new Date(date).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
           : "—",
     },
     {
@@ -193,12 +193,12 @@ const Attendance = () => {
     },
   ]
   if (loading) {
-  return (
-    <div className="flex  items-center justify-center h-screen">
-      <Loader /> {/* Apka custom Loader component */}
-    </div>
-  )
-}
+    return (
+      <div className="flex  items-center justify-center h-screen">
+        <Loader /> {/* Apka custom Loader component */}
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 space-y-4">
@@ -214,7 +214,7 @@ const Attendance = () => {
           Search
         </Button>
       </div>
-      
+
 
       {/* 📊 Ant Design Table */}
       <Table
@@ -224,17 +224,17 @@ const Attendance = () => {
         locale={{ emptyText: "No attendance records found." }}
         className="mt-4"
         bordered
-        
+
       />
       {totalPages > 1 && (
-                      <div className="p-4 border-t">
-                        <SimplePagination
-                          currentPage={currentPage}
-                          totalPages={totalPages}
-                          onPageChange={handlePageChange}
-                        />
-                      </div>
-                    )}
+        <div className="p-4 border-t">
+          <SimplePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
     </div>
   )
 }
