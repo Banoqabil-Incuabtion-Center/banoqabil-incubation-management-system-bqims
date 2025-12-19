@@ -109,6 +109,15 @@ const Students: React.FC = () => {
       // Fetch status data with same pagination
       const statusResponse = await attendanceRepo.getAllUserStatus(page, limit)
       
+      // Debug logs - yeh production mein comment kar dena
+      console.log("Users Response:", usersResponse.data)
+      console.log("Status Response:", statusResponse.data)
+      if (usersResponse.data?.length > 0 && statusResponse.data?.length > 0) {
+        console.log("First user ID:", usersResponse.data[0]._id)
+        console.log("First status ID:", statusResponse.data[0]._id)
+        console.log("First status value:", statusResponse.data[0].status)
+      }
+      
       // Extract data from paginated response
       setUsers(usersResponse.data || [])
       setStatusData(statusResponse.data || [])
@@ -166,8 +175,7 @@ const Students: React.FC = () => {
     } catch (error: any) {
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors)
-        console.log(errors);
-        
+        console.log(errors)
       } else {
         message.error(error.response?.data?.message || "Action failed")
       }
@@ -281,7 +289,9 @@ const Students: React.FC = () => {
                 {users.length > 0 ? (
                   users.map((user, index) => {
                     // Match status by comparing _id as strings
-                    const status = statusData.find((s) => s._id.toString() === user._id.toString())?.status
+                    const statusObj = statusData.find((s) => s._id?.toString() === user._id?.toString())
+                    const status = statusObj?.status
+                    
                     // Calculate global index based on current page
                     const globalIndex = (currentPage - 1) * limit + index + 1
                     
@@ -304,8 +314,8 @@ const Students: React.FC = () => {
                                 : status === "Absent"
                                 ? "bg-red-100 text-red-600"
                                 : status === "Late"
-                                ? "bg-orange-100 text-orange-600"
-                                : "bg-yellow-100 text-yellow-600"
+                                ? "bg-yellow-100 text-yellow-600"
+                                : "bg-orange-100 text-orange-600"
                             }`}
                           >
                             {status || "N/A"}
