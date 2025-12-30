@@ -109,12 +109,12 @@ function PaginatedList<T>({ fetchData, renderItem, pageSize = 10 }: PaginatedLis
 
       {/* No more items message */}
       {!hasMore && items.length > 0 && (
-        <p className="text-gray-500 text-center text-sm">No more posts to load</p>
+        <p className="text-gray-500 text-center text-sm">Nothing to load</p>
       )}
 
       {/* Empty state */}
       {items.length === 0 && !loading && !error && (
-        <p className="text-gray-500 text-center">No posts found</p>
+        <p className="text-gray-500 text-center">Nothing found</p>
       )}
     </div>
   );
