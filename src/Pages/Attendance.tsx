@@ -43,6 +43,8 @@ interface AttendanceRecord {
     name: string
     email?: string
     avatar?: string
+    bq_id?: string
+    incubation_id?: string
   }
   date: string
   status: string
@@ -118,16 +120,30 @@ const Attendance = () => {
         filters.endDate = formatDateForAPI(prevMonthEnd)
       }
 
-      const response = await attendanceRepo.getAttendanceHistory(page, limit, filters)
+      let response
+      if (dateFilter === "today" || dateFilter === "yesterday") {
+        const date = dateFilter === "today" ? formatDateForAPI(today) : formatDateForAPI(new Date(today.getTime() - 86400000))
+        response = await attendanceRepo.getAllUserStatus(page, limit, { ...filters, date })
+      } else {
+        response = await attendanceRepo.getAttendanceHistory(page, limit, filters)
+      }
+
       const data = response.data || []
 
       // Transform raw data to AttendanceRecord format
       const transformed = data.map((item: any) => ({
         key: item._id,
-        user: item.user,
-        date: item.createdAt,
+        user: item.user || {
+          _id: item._id,
+          name: item.name,
+          email: item.email,
+          avatar: item.avatar,
+          bq_id: item.bq_id,
+          incubation_id: item.incubation_id
+        },
+        date: item.createdAt || response.date,
         status: item.status,
-        shift: item.shift,
+        shift: item.shift || item.assignedShift,
         checkInTime: item.checkInTime,
         checkOutTime: item.checkOutTime,
       }))
@@ -299,10 +315,10 @@ const Attendance = () => {
           <div className="flex flex-wrap gap-3 items-end">
             {/* Search */}
             <div className="flex-1 min-w-[200px]">
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Search by Name</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Search Student</label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Enter user name..."
+                  placeholder="Search by Name, BQ ID, ID or Email..."
                   value={searchName}
                   onChange={(e) => setSearchName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -403,8 +419,20 @@ const Attendance = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-sm">{record.user?.name || "Unknown"}</p>
-                          <p className="text-xs text-muted-foreground">{record.user?.email || ""}</p>
+                          <p className="font-medium text-sm leading-none mb-1">{record.user?.name || "Unknown"}</p>
+                          <div className="flex gap-2 items-center">
+                            {record.user?.bq_id && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                                {record.user.bq_id}
+                              </span>
+                            )}
+                            {record.user?.incubation_id && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400">
+                                {record.user.incubation_id}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-1">{record.user?.email || ""}</p>
                         </div>
                       </div>
                     </TableCell>

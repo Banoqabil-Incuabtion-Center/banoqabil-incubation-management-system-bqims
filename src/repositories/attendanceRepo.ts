@@ -2,9 +2,14 @@
 import api from "../lib/axios"
 
 export class AttendanceRepo {
-  // ✅ Get today's status of all users
-  async getAllUserStatus(page = 1, limit = 10) {
-    const res = await api.get(`/api/attendance/status?page=${page}&limit=${limit}`)
+  // ✅ Get specific date status of all users
+  async getAllUserStatus(page = 1, limit = 10, filters: any = {}) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...filters
+    })
+    const res = await api.get(`/api/attendance/status?${params.toString()}`)
     return res.data
   }
 
