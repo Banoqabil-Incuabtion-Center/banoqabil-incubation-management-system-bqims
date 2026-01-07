@@ -1,110 +1,134 @@
+// auth/Login.tsx
 import React, { useState, useEffect } from "react"
-import { message } from "antd"
+import { toast } from "sonner"
 import { CiUnread, CiRead } from "react-icons/ci"
 import { userRepo } from "../repositories/userRepo"
 import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
 import { useNavigate } from "react-router-dom"
-import { useAuthStore } from "./useAuthStore"
+import { useAuthStore } from "@/hooks/store/authStore"
 import Loader from "@/components/Loader"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { cn } from "@/lib/utils"
+
+const loginSchema = z.object({
+  username: z.string().min(1, { message: "Username is required" }),
+  password: z.string().min(1, { message: "Password is required" }),
+})
+
+type LoginFormValues = z.infer<typeof loginSchema>
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
-  const { setAuth, isAuthenticated } = useAuthStore()  // ✅ setAuth use karo
+  const { setUser, isAuthenticated } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({ username: "", password: "" })
 
-  // 🚀 Redirect if already logged in
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  })
+
+  // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) navigate("/")
   }, [isAuthenticated, navigate])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }))
-  }
-
-  const handleSubmit = async () => {
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true)
-    setErrors({})
 
     try {
-      const data = await userRepo.loginAdmin(formData)
-      // ✅ Dono ek saath set karo
-      setAuth(data.user, data.token)
-      message.success("Login successful")
+      const response = await userRepo.loginAdmin(data)
+
+      // Store token for API calls
+      if (response.token) {
+        localStorage.setItem('token', response.token)
+      }
+
+      setUser(response.user)
+      toast.success("Login successful")
       navigate("/", { replace: true })
     } catch (err: any) {
       const errMsg = err.response?.data?.message || "Login failed"
-      message.error(errMsg)
-      setErrors({ username: errMsg, password: errMsg })
+      toast.error(errMsg)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !isLoading) handleSubmit()
-  }
-
   return (
-    <div className="max-w-md mx-auto p-6 mt-10 rounded-lg border shadow bg-white dark:bg-neutral-900">
-      <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
-
-      <div className="space-y-5 mb-6">
-        <div>
-          <label htmlFor="username" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-            Username
-          </label>
-          <input
-            type="text"
-            name="username"
-            id="username"
-            placeholder="Enter username"
-            value={formData.username}
-            onChange={handleChange}
-            onKeyPress={handleKeyPress}
-            className={`block w-full rounded-md border px-3 py-2 text-gray-900 dark:text-white dark:bg-neutral-800 
-              focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition
-              ${errors.username ? "border-red-500" : "border-gray-300 dark:border-gray-600"}`}
-          />
-          {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username}</p>}
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-black tracking-tight">Admin Login</h1>
+          <p className="text-sm text-muted-foreground font-medium">
+            Enter your credentials to access the admin dashboard
+          </p>
         </div>
 
-        <div>
-          <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              id="password"
-              placeholder="Enter password"
-              value={formData.password}
-              onChange={handleChange}
-              onKeyPress={handleKeyPress}
-              className={`block w-full rounded-md border px-3 py-2 text-gray-900 dark:text-white dark:bg-neutral-800 
-                focus:border-blue-600 focus:ring-1 focus:ring-blue-600 focus:outline-none transition
-                ${errors.password ? "border-red-500" : "border-gray-300 dark:border-gray-600"}`}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 p-6 border rounded-xl shadow-sm bg-card">
+          <div className="space-y-2">
+            <Label htmlFor="username" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+              Username
+            </Label>
+            <Input
+              id="username"
+              type="text"
+              placeholder="Enter username"
+              className={cn(
+                "h-12 rounded-xl border-muted/50 bg-muted/5 px-4 focus-visible:ring-primary/20",
+                errors.username ? "border-red-500" : ""
+              )}
+              {...register("username")}
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-2.5 text-gray-500 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
-            >
-              {showPassword ? <CiUnread size={20} /> : <CiRead size={20} />}
-            </button>
+            {errors.username && <p className="text-red-500 text-[10px] font-bold mt-1 ml-1">{errors.username.message}</p>}
           </div>
-          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-        </div>
-      </div>
 
-      <Button className="w-full h-11 text-lg font-medium" onClick={handleSubmit} disabled={isLoading}>
-        {isLoading ? <Loader /> : "Login"}
-      </Button>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+              Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter password"
+                className={cn(
+                  "h-12 rounded-xl border-muted/50 bg-muted/5 px-4 pr-12 focus-visible:ring-primary/20",
+                  errors.password ? "border-red-500" : ""
+                )}
+                {...register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 cursor-pointer hover:text-primary transition-colors select-none"
+              >
+                {showPassword ? <CiUnread size={22} /> : <CiRead size={22} />}
+              </button>
+            </div>
+            {errors.password && <p className="text-red-500 text-[10px] font-bold mt-1 ml-1">{errors.password.message}</p>}
+          </div>
+
+          <Button
+            className="w-full h-12 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-95"
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading ? <Loader /> : "Login"}
+          </Button>
+        </form>
+      </div>
     </div>
   )
 }

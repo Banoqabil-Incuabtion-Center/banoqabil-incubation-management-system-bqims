@@ -1,21 +1,25 @@
+// auth/PrivateRoute.tsx
 import { Navigate } from "react-router-dom"
-import { useAuthStore } from "./useAuthStore"
+import { useEffect, useState } from "react"
+import { useAuthStore } from "@/hooks/store/authStore"
 import Loader from "@/components/Loader"
-import React from "react"
 
 interface PrivateRouteProps {
   children: React.ReactNode
 }
 
 const PrivateRoute = ({ children }: PrivateRouteProps) => {
-  const { isAuthenticated, token } = useAuthStore()
-  const [isChecking, setIsChecking] = React.useState(true)
+  const { isAuthenticated, setLoading } = useAuthStore()
+  const [isChecking, setIsChecking] = useState(true)
 
   // Wait for Zustand persist to load
-  React.useEffect(() => {
-    const timer = setTimeout(() => setIsChecking(false), 100) // small delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false)
+      setIsChecking(false)
+    }, 100) // small delay for persist rehydration
     return () => clearTimeout(timer)
-  }, [])
+  }, [setLoading])
 
   if (isChecking) {
     return (
@@ -25,7 +29,7 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
     )
   }
 
-  if (!isAuthenticated || !token) {
+  if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />
   }
 

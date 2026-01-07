@@ -1,44 +1,144 @@
 import { useEffect, useState } from "react"
 import { attendanceRepo } from "@/repositories/attendanceRepo"
 import { Button } from "@/components/ui/button"
-import { Input, Select, Table, message } from "antd"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { toast } from "sonner"
 import Loader from "@/components/Loader"
 import SimplePagination from "@/components/simple-pagination"
+import { Link } from "react-router-dom"
+import {
+  IconCalendarStats,
+  IconSearch,
+  IconSettings,
+  IconClock,
+  IconLogin,
+  IconLogout,
+  IconUsers,
+  IconCalendar,
+  IconRefresh
+} from "@tabler/icons-react"
 
+interface AttendanceRecord {
+  key: string
+  user: {
+    _id: string
+    name: string
+    email?: string
+    avatar?: string
+  }
+  date: string
+  status: string
+  shift: string
+  checkInTime: string | null
+  checkOutTime: string | null
+}
 
-const { Option } = Select
+const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
+  Present: { bg: "bg-emerald-100 dark:bg-emerald-950", text: "text-emerald-700 dark:text-emerald-400" },
+  Late: { bg: "bg-amber-100 dark:bg-amber-950", text: "text-amber-700 dark:text-amber-400" },
+  Absent: { bg: "bg-red-100 dark:bg-red-950", text: "text-red-700 dark:text-red-400" },
+  "Early Leave": { bg: "bg-orange-100 dark:bg-orange-950", text: "text-orange-700 dark:text-orange-400" },
+  "Checked In": { bg: "bg-blue-100 dark:bg-blue-950", text: "text-blue-700 dark:text-blue-400" },
+}
+
+const DATE_FILTERS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "thisWeek", label: "This Week" },
+  { value: "thisMonth", label: "This Month" },
+  { value: "previousMonth", label: "Previous Month" },
+  { value: "overall", label: "All Time" },
+]
 
 const Attendance = () => {
   const [searchName, setSearchName] = useState("")
-  const [allHistory, setAllHistory] = useState<any[]>([])
-  const [filteredHistory, setFilteredHistory] = useState<any[]>([])
+  const [filteredHistory, setFilteredHistory] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(false)
-  const [dateFilter, setDateFilter] = useState("today")
+  const [dateFilter, setDateFilter] = useState("overall")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [shiftFilter, setShiftFilter] = useState("all")
 
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [totalHistory, setTotalHistory] = useState(0)
-  const [limit] = useState(10)
-
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [limit] = useState(15)
+  const [stats, setStats] = useState({ total: 0, present: 0, late: 0, absent: 0 })
 
   const fetchAllHistory = async (page = 1) => {
     setLoading(true)
     try {
+      const filters: any = {}
+      if (statusFilter !== "all") filters.status = statusFilter
+      if (shiftFilter !== "all") filters.shift = shiftFilter
+      if (searchName.trim()) filters.search = searchName.trim()
 
-      const usersResponse = await attendanceRepo.getAttendanceHistory(page, limit)
+      // Calculate start and end dates based on dateFilter
+      const today = new Date()
+      const formatDateForAPI = (d: Date) => d.toISOString().split("T")[0]
 
-      const data = usersResponse.data || [];
+      if (dateFilter === "today") {
+        filters.startDate = formatDateForAPI(today)
+        filters.endDate = formatDateForAPI(today)
+      } else if (dateFilter === "yesterday") {
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
+        filters.startDate = formatDateForAPI(yesterday)
+        filters.endDate = formatDateForAPI(yesterday)
+      } else if (dateFilter === "thisWeek") {
+        const weekStart = new Date(today)
+        weekStart.setDate(today.getDate() - today.getDay())
+        filters.startDate = formatDateForAPI(weekStart)
+        filters.endDate = formatDateForAPI(today)
+      } else if (dateFilter === "thisMonth") {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+        filters.startDate = formatDateForAPI(monthStart)
+        filters.endDate = formatDateForAPI(today)
+      } else if (dateFilter === "previousMonth") {
+        const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+        filters.startDate = formatDateForAPI(prevMonthStart)
+        filters.endDate = formatDateForAPI(prevMonthEnd)
+      }
 
-      // Extract data from paginated response
-      setAllHistory(data)
-      filterByDate(dateFilter, data)
-      setTotalPages(usersResponse.pagination?.totalPages || 1)
-      setTotalHistory(usersResponse.pagination?.total || 0)
+      const response = await attendanceRepo.getAttendanceHistory(page, limit, filters)
+      const data = response.data || []
+
+      // Transform raw data to AttendanceRecord format
+      const transformed = data.map((item: any) => ({
+        key: item._id,
+        user: item.user,
+        date: item.createdAt,
+        status: item.status,
+        shift: item.shift,
+        checkInTime: item.checkInTime,
+        checkOutTime: item.checkOutTime,
+      }))
+
+      setFilteredHistory(transformed)
+      setTotalPages(response.pagination?.totalPages || 1)
+      setTotalRecords(response.pagination?.total || 0)
+      setStats(response.stats || { total: 0, present: 0, late: 0, absent: 0 })
       setCurrentPage(page)
-      console.log(totalHistory);
-
     } catch (error) {
-      message.error("Error fetching all history")
+      toast.error("Failed to fetch attendance history")
       console.error("Fetch error:", error)
     } finally {
       setLoading(false)
@@ -50,184 +150,295 @@ const Attendance = () => {
     fetchAllHistory(page)
   }
 
+  // Effect for filters
   useEffect(() => {
-    fetchAllHistory()
-  }, [])
-
-  // 🔍 Search by Name
-  const handleSearch = () => {
-    if (!searchName.trim()) {
-      filterByDate(dateFilter, allHistory)
-      return
-    }
-
-    const lowerName = searchName.toLowerCase()
-    const filtered = filteredHistory.filter((record) =>
-      record.user?.name?.toLowerCase().includes(lowerName)
-    )
-    setFilteredHistory(filtered)
-  }
-
-  // 🧠 Group Records by (User + Date)
-  const groupByUserAndDate = (data: any[]) => {
-    const map = new Map()
-
-    data.forEach((item) => {
-      const userId = item.user?._id || item.user?.id
-      const dateKey = new Date(item.createdAt).toISOString().split("T")[0]
-      const key = `${userId}_${dateKey}`
-
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          user: item.user,
-          date: dateKey,
-          status: item.status,
-          checkInTime: item.checkInTime,
-          checkOutTime: item.checkOutTime,
-        })
-      }
-    })
-
-    return Array.from(map.values())
-  }
-
-  // 📅 Date Filters (no dayjs)
-  const filterByDate = (type: string, baseData = allHistory) => {
-    const today = new Date()
-    let filtered: any[] = []
-
-    switch (type) {
-      case "today":
-        filtered = baseData.filter((rec) => {
-          const recDate = new Date(rec.createdAt)
-          return (
-            recDate.getDate() === today.getDate() &&
-            recDate.getMonth() === today.getMonth() &&
-            recDate.getFullYear() === today.getFullYear()
-          )
-        })
-        break
-
-      case "previousMonth":
-        const prevMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1
-        const prevYear = prevMonth === 11 ? today.getFullYear() - 1 : today.getFullYear()
-        filtered = baseData.filter((rec) => {
-          const recDate = new Date(rec.createdAt)
-          return (
-            recDate.getMonth() === prevMonth &&
-            recDate.getFullYear() === prevYear
-          )
-        })
-        break
-
-      case "overall":
-      default:
-        filtered = baseData
-        break
-    }
-
-    const grouped = groupByUserAndDate(filtered)
-    setFilteredHistory(grouped)
-  }
+    const timer = setTimeout(() => {
+      fetchAllHistory(1)
+    }, 500) // Debounce search
+    return () => clearTimeout(timer)
+  }, [dateFilter, statusFilter, shiftFilter, searchName])
 
   const handleDateFilterChange = (value: string) => {
     setDateFilter(value)
-    filterByDate(value)
   }
 
-  // 📝 Table Columns
-  const columns = [
-    {
-      title: "Name",
-      dataIndex: ["user", "name"],
-      key: "name",
-      render: (text: any) => text || "—",
-    },
-    {
-      title: (
-        <div className="flex flex-col">
-          <span>Date</span>
-          <Select
-            value={dateFilter}
-            onChange={handleDateFilterChange}
-            size="small"
-            style={{ width: 140, marginTop: 4 }}
-          >
-            <Option value="today">Today</Option>
-            <Option value="previousMonth">Previous Month</Option>
-            <Option value="overall">Overall</Option>
-          </Select>
-        </div>
-      ),
-      dataIndex: "date",
-      key: "date",
-      render: (date: string) =>
-        date
-          ? new Date(date).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })
-          : "—",
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (text: string) => text || "—",
-    },
-    {
-      title: "Check In",
-      dataIndex: "checkInTime",
-      key: "checkInTime",
-      render: (time: string) =>
-        time ? new Date(time).toLocaleTimeString() : "—",
-    },
-    {
-      title: "Check Out",
-      dataIndex: "checkOutTime",
-      key: "checkOutTime",
-      render: (time: string) =>
-        time ? new Date(time).toLocaleTimeString() : "—",
-    },
-  ]
-  if (loading) {
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value)
+  }
+
+  const handleShiftFilterChange = (value: string) => {
+    setShiftFilter(value)
+  }
+
+  const handleSearch = () => {
+    fetchAllHistory(1)
+  }
+
+  const handleRefresh = () => {
+    fetchAllHistory(currentPage)
+  }
+
+  const formatTime = (time: string | null) => {
+    if (!time) return "—"
+    return new Date(time).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+  }
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  if (loading && filteredHistory.length === 0) {
     return (
-      <div className="flex  items-center justify-center h-screen">
-        <Loader /> {/* Apka custom Loader component */}
+      <div className="flex items-center justify-center h-[50vh]">
+        <Loader />
       </div>
     )
   }
 
   return (
-    <div className="p-6 space-y-4">
-      {/* 🔍 Search */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <Input
-          placeholder="Enter User Name"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-          className="w-60"
-        />
-        <Button onClick={handleSearch} disabled={loading}>
-          Search
-        </Button>
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-primary/10">
+            <IconCalendarStats className="size-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Attendance History</h1>
+            <p className="text-sm text-muted-foreground">Monitor and manage attendance records</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+            <IconRefresh className={`size-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button asChild size="sm">
+            <Link to="/admin/attendance/settings">
+              <IconSettings className="size-4 mr-1" />
+              Settings
+            </Link>
+          </Button>
+        </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-200/50 dark:border-blue-800/50">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/20">
+              <IconUsers className="size-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-xs text-muted-foreground">Total Records</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-200/50 dark:border-emerald-800/50">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-500/20">
+              <IconLogin className="size-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats.present}</p>
+              <p className="text-xs text-muted-foreground">Present</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-200/50 dark:border-amber-800/50">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/20">
+              <IconClock className="size-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats.late}</p>
+              <p className="text-xs text-muted-foreground">Late</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-200/50 dark:border-red-800/50">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-red-500/20">
+              <IconLogout className="size-5 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats.absent}</p>
+              <p className="text-xs text-muted-foreground">Absent</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* 📊 Ant Design Table */}
-      <Table
-        columns={columns}
-        dataSource={filteredHistory}
-        pagination={false}
-        locale={{ emptyText: "No attendance records found." }}
-        className="mt-4"
-        bordered
+      {/* Filters */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <IconSearch className="size-4" />
+            Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3 items-end">
+            {/* Search */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Search by Name</label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter user name..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="h-9"
+                />
+                <Button onClick={handleSearch} size="sm" variant="secondary" className="h-9">
+                  <IconSearch className="size-4" />
+                </Button>
+              </div>
+            </div>
 
-      />
+            {/* Date Filter */}
+            <div className="min-w-[160px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                <IconCalendar className="size-3 inline mr-1" />
+                Date Range
+              </label>
+              <Select value={dateFilter} onValueChange={handleDateFilterChange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select date" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DATE_FILTERS.map((filter) => (
+                    <SelectItem key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Status Filter */}
+            <div className="min-w-[140px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Status</label>
+              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="Present">Present</SelectItem>
+                  <SelectItem value="Late">Late</SelectItem>
+                  <SelectItem value="Absent">Absent</SelectItem>
+                  <SelectItem value="Early Leave">Early Leave</SelectItem>
+                  <SelectItem value="Checked In">Checked In</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Shift Filter */}
+            <div className="min-w-[140px]">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Shift</label>
+              <Select value={shiftFilter} onValueChange={handleShiftFilterChange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="All Shifts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Shifts</SelectItem>
+                  <SelectItem value="Morning">Morning</SelectItem>
+                  <SelectItem value="Evening">Evening</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="w-[250px]">User</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Shift</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Check In</TableHead>
+                <TableHead>Check Out</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredHistory.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                    No attendance records found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredHistory.map((record) => (
+                  <TableRow key={record.key} className="group hover:bg-muted/30">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-9">
+                          <AvatarImage src={record.user?.avatar} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                            {getInitials(record.user?.name || "?")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{record.user?.name || "Unknown"}</p>
+                          <p className="text-xs text-muted-foreground">{record.user?.email || ""}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{formatDate(record.date)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-medium">
+                        {record.shift}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className={`${STATUS_STYLES[record.status]?.bg || "bg-gray-100"} ${STATUS_STYLES[record.status]?.text || "text-gray-700"} border-0 font-medium`}
+                      >
+                        {record.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm font-mono">
+                      {formatTime(record.checkInTime)}
+                    </TableCell>
+                    <TableCell className="text-sm font-mono">
+                      {formatTime(record.checkOutTime)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="p-4 border-t">
+        <div className="flex justify-center">
           <SimplePagination
             currentPage={currentPage}
             totalPages={totalPages}

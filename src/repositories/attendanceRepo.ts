@@ -9,8 +9,13 @@ export class AttendanceRepo {
   }
 
   // ✅ Get full attendance history (all users)
-  async getAttendanceHistory(page = 1, limit = 10) {
-    const res = await api.get(`/api/attendance/history?page=${page}&limit=${limit}`)
+  async getAttendanceHistory(page = 1, limit = 10, filters: any = {}) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...filters
+    })
+    const res = await api.get(`/api/attendance/history?${params.toString()}`)
     return res.data
   }
 
@@ -32,6 +37,17 @@ export class AttendanceRepo {
     return res.data
   }
 
+  // ✅ Get attendance settings (admin)
+  async getSettings() {
+    const res = await api.get("/api/attendance/settings")
+    return res.data
+  }
+
+  // ✅ Update attendance settings (admin)
+  async updateSettings(data: any) {
+    const res = await api.put("/api/attendance/settings", data)
+    return res.data
+  }
 
 }
 

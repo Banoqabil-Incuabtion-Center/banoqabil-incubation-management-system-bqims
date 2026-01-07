@@ -27,7 +27,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import {  Check } from "lucide-react"
+import { Check } from "lucide-react"
 
 const data = {
   user: {
@@ -70,6 +70,11 @@ const data = {
       title: "Attendance",
       url: "/admin/attendance",
       icon: Check,
+    },
+    {
+      title: "Attendance Settings",
+      url: "/admin/attendance/settings",
+      icon: IconSettings,
     },
   ],
   navClouds: [
@@ -171,7 +176,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain as any} /> 
+        <NavMain items={data.navMain as any} />
 
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
