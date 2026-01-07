@@ -33,7 +33,8 @@ import {
   IconLogout,
   IconUsers,
   IconCalendar,
-  IconRefresh
+  IconRefresh,
+  IconAlertCircle
 } from "@tabler/icons-react"
 
 interface AttendanceRecord {
@@ -51,6 +52,7 @@ interface AttendanceRecord {
   shift: string
   checkInTime: string | null
   checkOutTime: string | null
+  offDayReason?: string | null
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
@@ -59,6 +61,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   Absent: { bg: "bg-red-100 dark:bg-red-950", text: "text-red-700 dark:text-red-400" },
   "Early Leave": { bg: "bg-orange-100 dark:bg-orange-950", text: "text-orange-700 dark:text-orange-400" },
   "Checked In": { bg: "bg-blue-100 dark:bg-blue-950", text: "text-blue-700 dark:text-blue-400" },
+  "Off Day": { bg: "bg-purple-100 dark:bg-purple-950", text: "text-purple-700 dark:text-purple-400" },
 }
 
 const DATE_FILTERS = [
@@ -83,6 +86,7 @@ const Attendance = () => {
   const [totalRecords, setTotalRecords] = useState(0)
   const [limit] = useState(15)
   const [stats, setStats] = useState({ total: 0, present: 0, late: 0, absent: 0 })
+  const [calendarInfo, setCalendarInfo] = useState<any>(null)
 
   const fetchAllHistory = async (page = 1) => {
     setLoading(true)
@@ -146,12 +150,14 @@ const Attendance = () => {
         shift: item.shift || item.assignedShift,
         checkInTime: item.checkInTime,
         checkOutTime: item.checkOutTime,
+        offDayReason: item.offDayReason
       }))
 
       setFilteredHistory(transformed)
       setTotalPages(response.pagination?.totalPages || 1)
       setTotalRecords(response.pagination?.total || 0)
       setStats(response.stats || { total: 0, present: 0, late: 0, absent: 0 })
+      setCalendarInfo(response.calendarInfo || null)
       setCurrentPage(page)
     } catch (error) {
       toast.error("Failed to fetch attendance history")
@@ -254,6 +260,15 @@ const Attendance = () => {
           </Button>
         </div>
       </div>
+
+      {calendarInfo?.isNonWorking && (
+        <div className="bg-purple-500/10 border border-purple-200/50 dark:border-purple-800/50 rounded-xl p-4 flex items-center gap-3 text-purple-700 dark:text-purple-400">
+          <IconAlertCircle className="size-5 shrink-0" />
+          <div className="text-sm font-medium">
+            This day is marked as <span className="font-bold underlineDecoration-wavy decoration-purple-500/50">{calendarInfo.reason}</span> ({calendarInfo.type}). No typical attendance expected.
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -443,12 +458,19 @@ const Attendance = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className={`${STATUS_STYLES[record.status]?.bg || "bg-gray-100"} ${STATUS_STYLES[record.status]?.text || "text-gray-700"} border-0 font-medium`}
-                      >
-                        {record.status}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          variant="secondary"
+                          className={`${STATUS_STYLES[record.status]?.bg || "bg-gray-100"} ${STATUS_STYLES[record.status]?.text || "text-gray-700"} border-0 font-medium whitespace-nowrap`}
+                        >
+                          {record.status}
+                        </Badge>
+                        {record.offDayReason && (
+                          <span className="text-[10px] text-muted-foreground font-medium px-1 italic">
+                            {record.offDayReason}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm font-mono">
                       {formatTime(record.checkInTime)}
@@ -465,16 +487,18 @@ const Attendance = () => {
       </Card>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center">
-          <SimplePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        </div>
-      )}
-    </div>
+      {
+        totalPages > 1 && (
+          <div className="flex justify-center">
+            <SimplePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )
+      }
+    </div >
   )
 }
 

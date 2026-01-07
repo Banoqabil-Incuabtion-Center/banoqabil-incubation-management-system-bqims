@@ -12,6 +12,7 @@ import {
   IconListDetails,
   IconSettings,
   IconUsers,
+  IconCalendar,
 } from "@tabler/icons-react"
 
 
@@ -75,6 +76,11 @@ const data = {
       title: "Attendance Settings",
       url: "/admin/attendance/settings",
       icon: IconSettings,
+    },
+    {
+      title: "Calendar",
+      url: "/admin/calendar",
+      icon: IconCalendar,
     },
   ],
   navClouds: [

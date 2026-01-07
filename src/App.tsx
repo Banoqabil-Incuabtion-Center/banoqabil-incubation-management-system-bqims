@@ -7,6 +7,7 @@ import Projects from "./Pages/Projects";
 import Managers from "./Pages/Managers";
 import Attendance from "./Pages/Attendance";
 import AttendanceSettings from "./Pages/AttendanceSettings";
+import AdminCalendar from "./Pages/AdminCalendar";
 import UserLayout from "./components/layout/userLayout";
 import PrivateRoute from "./auth/PrivateRoute";
 import Login from "./auth/Login";
@@ -28,6 +29,7 @@ const App = () => {
           <Route path="/admin/pm" element={<Managers />} />
           <Route path="/admin/attendance" element={<Attendance />} />
           <Route path="/admin/attendance/settings" element={<AttendanceSettings />} />
+          <Route path="/admin/calendar" element={<AdminCalendar />} />
         </Route>
 
         {/* Catch all - redirect to home */}
