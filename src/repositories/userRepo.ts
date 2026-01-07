@@ -2,8 +2,14 @@ import api from "../lib/axios"
 
 export class UserRepo {
   // Fetch all users
-  async getAllUsers(page = 1, limit = 10) {
-    const response = await api.get(`/api/user/signup?page=${page}&limit=${limit}`);
+  async getAllUsers(page = 1, limit = 10, search = "", filters: any = {}) {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      search,
+      ...filters
+    });
+    const response = await api.get(`/api/user/signup?${params.toString()}`);
     return response.data;
   }
   // Add a new user
