@@ -5,16 +5,30 @@ import dayjs from "dayjs";
 import type { Dayjs } from "dayjs";
 import { calendarRepo } from "@/repositories/calendarRepo";
 import type { CalendarEntry } from "@/repositories/calendarRepo";
-import { Card, CardContent } from "@/components/ui/card";
-import { IconPlus } from "@tabler/icons-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { IconPlus, IconCalendarEvent, IconSettings } from "@tabler/icons-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
+const DAYS = [
+    { value: 0, label: "Sun" },
+    { value: 1, label: "Mon" },
+    { value: 2, label: "Tue" },
+    { value: 3, label: "Wed" },
+    { value: 4, label: "Thu" },
+    { value: 5, label: "Fri" },
+    { value: 6, label: "Sat" },
+];
+
 const AdminCalendar: React.FC = () => {
     const [entries, setEntries] = useState<CalendarEntry[]>([]);
+    const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<CalendarEntry | null>(null);
+    const [savingSettings, setSavingSettings] = useState(false);
     const [form] = Form.useForm();
     const { message, modal } = App.useApp();
 
@@ -22,14 +36,58 @@ const AdminCalendar: React.FC = () => {
         try {
             const res = await calendarRepo.getEntries();
             setEntries(res.data);
+            if (res.workingDays) {
+                setWorkingDays(res.workingDays);
+            }
         } catch (error) {
             message.error("Failed to fetch calendar entries");
         }
     };
 
+    const fetchSettings = async () => {
+        try {
+            const res = await calendarRepo.getSettings();
+            if (res.data?.workingDays) {
+                setWorkingDays(res.data.workingDays);
+            }
+        } catch (error) {
+            console.error("Failed to fetch calendar settings", error);
+        }
+    };
+
     useEffect(() => {
         fetchEntries();
+        fetchSettings();
     }, []);
+
+    const handleWorkingDayToggle = (day: number) => {
+        const newDays = workingDays.includes(day)
+            ? workingDays.filter((d) => d !== day)
+            : [...workingDays, day].sort();
+        setWorkingDays(newDays);
+    };
+
+    const saveWorkingDays = async () => {
+        setSavingSettings(true);
+        try {
+            await calendarRepo.updateSettings(workingDays);
+            toast.success("Working days updated successfully");
+        } catch (error) {
+            toast.error("Failed to update working days");
+        } finally {
+            setSavingSettings(false);
+        }
+    };
+
+    const seedSampleEvents = async () => {
+        try {
+            const res = await calendarRepo.seedEvents();
+            message.success(res.message);
+            fetchEntries();
+        } catch (error) {
+            message.error("Failed to seed events");
+        }
+    };
 
     const getListData = (value: Dayjs) => {
         return entries.filter((entry) => {
@@ -39,23 +97,34 @@ const AdminCalendar: React.FC = () => {
         });
     };
 
+    const isWeekend = (value: Dayjs) => {
+        return !workingDays.includes(value.day());
+    };
+
     const dateCellRender = (value: Dayjs) => {
         const listData = getListData(value);
+        const weekend = isWeekend(value);
+
         return (
-            <ul className="events m-0 p-0 list-none">
-                {listData.map((item) => (
-                    <li key={item._id} onClick={(e) => {
-                        e.stopPropagation();
-                        onEditEntry(item);
-                    }}>
-                        <Badge
-                            color={item.color}
-                            text={item.title}
-                            className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-[10px]"
-                        />
-                    </li>
-                ))}
-            </ul>
+            <div className={weekend ? "bg-red-50 dark:bg-red-950/20 -m-1 p-1 rounded" : ""}>
+                <ul className="events m-0 p-0 list-none">
+                    {listData.map((item) => (
+                        <li key={item._id} onClick={(e) => {
+                            e.stopPropagation();
+                            onEditEntry(item);
+                        }}>
+                            <Badge
+                                color={item.color}
+                                text={item.title}
+                                className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-[10px]"
+                            />
+                        </li>
+                    ))}
+                    {weekend && listData.length === 0 && (
+                        <span className="text-[9px] text-red-500 font-medium">Off</span>
+                    )}
+                </ul>
+            </div>
         );
     };
 
@@ -129,12 +198,64 @@ const AdminCalendar: React.FC = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Incubation Calendar</h1>
-                    <p className="text-muted-foreground mt-1">Manage holidays, events, and meetings.</p>
+                    <p className="text-muted-foreground mt-1">Manage holidays, events, working days, and meetings.</p>
                 </div>
-                <Button onClick={onAddEntry} type="primary" icon={<IconPlus size={18} />} className="flex items-center gap-2">
-                    Add Entry
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={seedSampleEvents} icon={<IconCalendarEvent size={18} />}>
+                        Add Sample Events
+                    </Button>
+                    <Button onClick={onAddEntry} type="primary" icon={<IconPlus size={18} />} className="flex items-center gap-2">
+                        Add Entry
+                    </Button>
+                </div>
             </div>
+
+            {/* Working Days Settings Card */}
+            <Card className="border-none shadow-sm">
+                <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                        <div className="p-2 rounded-lg bg-emerald-500">
+                            <IconSettings className="size-5 text-white" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-lg">Working Days</CardTitle>
+                            <CardDescription>Select which days are working days. Weekends will be marked as off in attendance.</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {DAYS.map((day) => (
+                            <label
+                                key={day.value}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border cursor-pointer transition-all ${workingDays.includes(day.value)
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-red-100 dark:bg-red-950/30 border-red-300 text-red-600 dark:text-red-400"
+                                    }`}
+                            >
+                                <Checkbox
+                                    checked={workingDays.includes(day.value)}
+                                    onCheckedChange={() => handleWorkingDayToggle(day.value)}
+                                    className="sr-only"
+                                />
+                                <span className="text-sm font-medium">{day.label}</span>
+                            </label>
+                        ))}
+                        <Button
+                            onClick={saveWorkingDays}
+                            type="primary"
+                            loading={savingSettings}
+                            className="ml-4"
+                        >
+                            Save Working Days
+                        </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                        <span className="text-red-500">Red</span> = Off Day (No attendance required) |
+                        <span className="text-primary ml-1">Blue</span> = Working Day
+                    </p>
+                </CardContent>
+            </Card>
 
             <Card className="border-none shadow-sm h-full">
                 <CardContent className="p-4">
@@ -216,3 +337,4 @@ const AdminCalendar: React.FC = () => {
 };
 
 export default AdminCalendar;
+

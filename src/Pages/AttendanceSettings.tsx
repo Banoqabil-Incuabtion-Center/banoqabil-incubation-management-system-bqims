@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+
 import { toast } from "sonner"
 import Loader from "@/components/Loader"
 import { IconClock, IconSun, IconMoon, IconSettings, IconDeviceFloppy } from "@tabler/icons-react"
@@ -30,15 +30,7 @@ interface AttendanceSettingsData {
     allowedIPs: string[]
 }
 
-const DAYS = [
-    { value: 0, label: "Sun" },
-    { value: 1, label: "Mon" },
-    { value: 2, label: "Tue" },
-    { value: 3, label: "Wed" },
-    { value: 4, label: "Thu" },
-    { value: 5, label: "Fri" },
-    { value: 6, label: "Sat" },
-]
+
 
 const AttendanceSettings = () => {
     const [settings, setSettings] = useState<AttendanceSettingsData | null>(null)
@@ -76,14 +68,7 @@ const AttendanceSettings = () => {
         })
     }
 
-    const handleWorkingDayToggle = (shift: "Morning" | "Evening", day: number) => {
-        if (!settings) return
-        const currentDays = settings.shifts[shift].workingDays
-        const newDays = currentDays.includes(day)
-            ? currentDays.filter((d) => d !== day)
-            : [...currentDays, day].sort()
-        handleShiftChange(shift, "workingDays", newDays)
-    }
+
 
     const handleGlobalChange = (field: keyof AttendanceSettingsData, value: any) => {
         if (!settings) return
@@ -217,28 +202,9 @@ const AttendanceSettings = () => {
                     />
                 </div>
 
-                {/* Working Days */}
-                <div className="space-y-2">
-                    <Label className="text-xs font-medium text-muted-foreground">Working Days</Label>
-                    <div className="flex flex-wrap gap-2">
-                        {DAYS.map((day) => (
-                            <label
-                                key={day.value}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer transition-all ${settings.shifts[shift].workingDays.includes(day.value)
-                                        ? "bg-primary text-primary-foreground border-primary"
-                                        : "bg-muted/50 hover:bg-muted"
-                                    }`}
-                            >
-                                <Checkbox
-                                    checked={settings.shifts[shift].workingDays.includes(day.value)}
-                                    onCheckedChange={() => handleWorkingDayToggle(shift, day.value)}
-                                    className="sr-only"
-                                />
-                                <span className="text-xs font-medium">{day.label}</span>
-                            </label>
-                        ))}
-                    </div>
-                </div>
+                <p className="text-xs text-muted-foreground pt-2 border-t">
+                    💡 Working days are now managed in the <span className="font-medium text-primary">Calendar</span> page.
+                </p>
             </CardContent>
         </Card>
     )

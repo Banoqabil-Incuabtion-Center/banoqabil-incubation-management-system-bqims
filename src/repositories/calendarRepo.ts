@@ -14,6 +14,11 @@ export interface CalendarEntry {
     recurrence: "None" | "Daily" | "Weekly" | "Monthly" | "Yearly";
 }
 
+export interface CalendarSettings {
+    _id?: string;
+    workingDays: number[];
+}
+
 export class CalendarRepo {
     async getEntries(start?: string, end?: string, type?: string) {
         const params = new URLSearchParams();
@@ -39,6 +44,24 @@ export class CalendarRepo {
         const response = await api.delete(`/api/calendar/${id}`);
         return response.data;
     }
+
+    // Calendar settings (working days)
+    async getSettings() {
+        const response = await api.get("/api/calendar/settings");
+        return response.data;
+    }
+
+    async updateSettings(workingDays: number[]) {
+        const response = await api.put("/api/calendar/settings", { workingDays });
+        return response.data;
+    }
+
+    // Seed sample events
+    async seedEvents() {
+        const response = await api.post("/api/calendar/seed");
+        return response.data;
+    }
 }
 
 export const calendarRepo = new CalendarRepo();
+

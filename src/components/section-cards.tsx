@@ -30,7 +30,7 @@ export function SectionCards() {
       .catch((err) => console.error("PM Error:", err))
 
     // Fetch Projects
-    fetch("http://localhost:3000/api/admin/projects")
+    fetch("http://localhost:3000/api/admin/project")
       .then((res) => res.json())
       .then((data) => setProjects(data.length || 0))
       .catch((err) => console.error("Projects Error:", err))

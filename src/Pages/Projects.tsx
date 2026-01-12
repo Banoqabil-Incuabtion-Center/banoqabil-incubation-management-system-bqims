@@ -57,10 +57,11 @@ const Projects = () => {
   // Fetch teams and PMs for dropdown
   const fetchDropdownData = async () => {
     try {
-      const teamsData = await teamRepo.getAllTeams();
-      const pmsData = await pmRepo.getPMs();
-      setTeams(teamsData || []);
-      setPms(pmsData || []);
+      const teamsResponse = await teamRepo.getAllTeams(1, 100); // Fetch up to 100 teams for dropdown
+      const pmsResponse = await pmRepo.getPMs();
+      // Handle paginated response - extract the data array
+      setTeams(Array.isArray(teamsResponse) ? teamsResponse : (teamsResponse?.data || []));
+      setPms(Array.isArray(pmsResponse) ? pmsResponse : (pmsResponse?.data || []));
     } catch {
       message.error("Failed to fetch Teams or PMs");
     }
@@ -258,8 +259,8 @@ const Projects = () => {
             <label
               htmlFor="title"
               className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${formData.title
-                  ? "-translate-y-6 scale-75 text-blue-600"
-                  : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
+                ? "-translate-y-6 scale-75 text-blue-600"
+                : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
                 }`}
             >
               Title
@@ -320,8 +321,8 @@ const Projects = () => {
             <label
               htmlFor="description"
               className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${formData.description
-                  ? "-translate-y-6 scale-75 text-blue-600"
-                  : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
+                ? "-translate-y-6 scale-75 text-blue-600"
+                : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
                 }`}
             >
               Description
@@ -337,9 +338,9 @@ const Projects = () => {
               type="file"
               accept="application/pdf"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              // className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+            // className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
             />
-              <p className="mt-2 text-sm text-gray-500">(Please upload a PDF file)</p>
+            <p className="mt-2 text-sm text-gray-500">(Please upload a PDF file)</p>
             {errors.file && (
               <p className="text-red-500 text-xs mt-1">{errors.file}</p>
             )}
