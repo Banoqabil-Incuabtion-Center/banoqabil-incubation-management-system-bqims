@@ -1,5 +1,5 @@
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { message } from "antd"
+import { toast } from "sonner"
 import { SectionCards } from "@/components/section-cards"
 import {
   Table,
@@ -31,7 +31,6 @@ export default function Page() {
   const [users, setUsers] = useState<User[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [totalUsers, setTotalUsers] = useState(0)
   const [limit] = useState(10)
 
   const fetchUsers = async (page = 1) => {
@@ -45,14 +44,12 @@ export default function Page() {
 
       // Extract data from paginated response
       setUsers(usersResponse.data || [])
-      
+
       setTotalPages(usersResponse.pagination?.totalPages || 1)
-      setTotalUsers(usersResponse.pagination?.total || 0)
       setCurrentPage(usersResponse.pagination?.currentPage || page)
-      console.log(totalUsers);
-      
+
     } catch (error) {
-      message.error("Failed to fetch users or attendance")
+      toast.error("Failed to fetch users or attendance")
       console.error("Fetch error:", error)
     } finally {
       setLoading(false)
@@ -75,16 +72,16 @@ export default function Page() {
           <SectionCards />
           <div className="px-4 lg:px-6">
             <ChartAreaInteractive />
-            
+
             <div className="rounded-lg border shadow-sm bg-white dark:bg-neutral-900 mt-4">
               {loading ? (
                 <div className="flex justify-center items-center h-40">
                   <Loader />
                 </div>
-                
+
               ) : (
                 <div >
-                  
+
                   <Table >
                     <TableHeader className="bg-neutral-100 dark:bg-neutral-800">
                       <TableRow>
@@ -110,7 +107,7 @@ export default function Page() {
                             <TableCell>{user.course}</TableCell>
 
                           </TableRow>
-                          
+
                         ))
                       ) : (
                         <TableRow>
@@ -122,20 +119,20 @@ export default function Page() {
                     </TableBody>
                   </Table>
                   {totalPages > 1 && (
-                                <div className="p-4 border-t">
-                                  <SimplePagination
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    onPageChange={handlePageChange}
-                                  />
-                                </div>
-                              )}
+                    <div className="p-4 border-t">
+                      <SimplePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                  )}
                 </div>
 
               )}
             </div>
           </div>
-          
+
 
           {/* <DataTable  /> */}
         </div>

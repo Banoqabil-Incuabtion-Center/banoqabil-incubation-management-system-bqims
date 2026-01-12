@@ -23,9 +23,9 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon className="w-5 h-5" />}
+              <SidebarMenuButton tooltip={item.title} asChild>
                 <Link to={item.url}>
+                  {item.icon && <item.icon className="w-5 h-5" />}
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>

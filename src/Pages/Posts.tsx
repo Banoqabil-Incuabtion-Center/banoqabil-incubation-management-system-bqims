@@ -1,5 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { Modal, message } from "antd";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { postRepo } from "@/repositories/postRepo";
 import UrlBreadcrumb from "@/components/UrlBreadcrumb";
@@ -21,6 +38,7 @@ const Posts = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -37,7 +55,7 @@ const Posts = () => {
       const data = await postRepo.getAllPosts();
       setPosts(data || []);
     } catch {
-      message.error("Failed to fetch posts");
+      toast.error("Failed to fetch posts");
     } finally {
       setLoading(false);
     }
@@ -75,7 +93,7 @@ const Posts = () => {
       form.append("title", formData.title);
       form.append("description", formData.description);
       form.append("link", formData.link);
-  
+
       if (formData.image) {
         // Agar nayi image select hui hai
         form.append("image", formData.image);
@@ -83,15 +101,15 @@ const Posts = () => {
         // Agar edit mode hai aur user ne new image select nahi ki
         form.append("existingImage", formData.existingImage);
       }
-  
+
       if (editingId) {
         await postRepo.updatePost(editingId, form); // ab form-data jayega
-        message.success("Post updated successfully");
+        toast.success("Post updated successfully");
       } else {
         await postRepo.createPost(form);
-        message.success("Post created successfully");
+        toast.success("Post created successfully");
       }
-  
+
       setIsModalOpen(false);
       resetForm();
       fetchPosts();
@@ -99,27 +117,26 @@ const Posts = () => {
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
       } else {
-        message.error(error.response?.data?.message || "Action failed");
+        toast.error(error.response?.data?.message || "Action failed");
       }
     }
   };
-  
+
   const handleDelete = (id: string) => {
-    Modal.confirm({
-      title: "Are you sure you want to delete this post?",
-      okText: "Yes, Delete",
-      okType: "danger",
-      cancelText: "Cancel",
-      onOk: async () => {
-        try {
-          await postRepo.deletePost(id);
-          setPosts((prev) => prev.filter((p) => p._id !== id));
-          message.success("Post deleted successfully");
-        } catch {
-          message.error("Failed to delete post");
-        }
-      },
-    });
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await postRepo.deletePost(deleteId);
+      setPosts((prev) => prev.filter((p) => p._id !== deleteId));
+      toast.success("Post deleted successfully");
+    } catch {
+      toast.error("Failed to delete post");
+    } finally {
+      setDeleteId(null);
+    }
   };
 
   const openEditModal = (post: Post) => {
@@ -204,99 +221,108 @@ const Posts = () => {
         </div>
       )}
 
-      {/* Modal */}
-      <Modal
-        title={
-          <span className="text-xl font-semibold mb-3 text-center">
-            {editingId ? "Edit Post" : "Create Post"}
-          </span>
-        }
-        open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          resetForm();
-        }}
-        footer={null}
-        centered
-      >
-        <div className="grid grid-cols-1 gap-6 mb-6 mt-7">
-          {[{ name: "title", label: "Title", type: "text" },
-          { name: "link", label: "Link", type: "text" }].map((input) => (
-            <div key={input.name} className="relative z-0 w-full group">
-              <input
-                type={input.type}
-                name={input.name}
-                id={input.name}
-                value={(formData as any)[input.name]}
-                onChange={handleChange}
-                className={`peer block w-full appearance-none border-0 border-b-2 bg-transparent py-2.5 px-0 text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 ${errors[input.name] ? "border-red-500" : "border-gray-300"
-                  }`}
-                placeholder=" "
-                autoComplete="off"
-              />
-              <label
-                htmlFor={input.name}
-                className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${(formData as any)[input.name]
+      <Dialog open={isModalOpen} onOpenChange={(open) => { setIsModalOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold mb-3 text-center">{editingId ? "Edit Post" : "Create Post"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-6 mb-6 mt-7">
+            {[{ name: "title", label: "Title", type: "text" },
+            { name: "link", label: "Link", type: "text" }].map((input) => (
+              <div key={input.name} className="relative z-0 w-full group">
+                <input
+                  type={input.type}
+                  name={input.name}
+                  id={input.name}
+                  value={(formData as any)[input.name]}
+                  onChange={handleChange}
+                  className={`peer block w-full appearance-none border-0 border-b-2 bg-transparent py-2.5 px-0 text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 ${errors[input.name] ? "border-red-500" : "border-gray-300"
+                    }`}
+                  placeholder=" "
+                  autoComplete="off"
+                />
+                <label
+                  htmlFor={input.name}
+                  className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${(formData as any)[input.name]
                     ? "-translate-y-6 scale-75 text-blue-600"
                     : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
+                    }`}
+                >
+                  {input.label}
+                </label>
+                {errors[input.name] && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors[input.name]}
+                  </p>
+                )}
+              </div>
+            ))}
+
+            <div className="relative z-0 w-full group">
+              <textarea
+                name="description"
+                id="description"
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+                className={`peer block w-full appearance-none border-0 border-b-2 bg-transparent py-2.5 px-0 text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 ${errors.description ? "border-red-500" : "border-gray-300"
+                  }`}
+                placeholder=" "
+              />
+              <label
+                htmlFor="description"
+                className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${formData.description
+                  ? "-translate-y-6 scale-75 text-blue-600"
+                  : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
                   }`}
               >
-                {input.label}
+                Description
               </label>
-              {errors[input.name] && (
+              {errors.description && (
                 <p className="text-red-500 text-xs mt-1">
-                  {errors[input.name]}
+                  {errors.description}
                 </p>
               )}
             </div>
-          ))}
 
-          <div className="relative z-0 w-full group">
-            <textarea
-              name="description"
-              id="description"
-              rows={4}
-              value={formData.description}
-              onChange={handleChange}
-              className={`peer block w-full appearance-none border-0 border-b-2 bg-transparent py-2.5 px-0 text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 ${errors.description ? "border-red-500" : "border-gray-300"
-                }`}
-              placeholder=" "
-            />
-            <label
-              htmlFor="description"
-              className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${formData.description
-                  ? "-translate-y-6 scale-75 text-blue-600"
-                  : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
-                }`}
+            <div className="flex flex-col gap-2">
+              <input type="file" accept="image/*" onChange={handleImageChange} />
+              {previewImage && (
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  className="h-40 w-full object-cover rounded border"
+                />
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              className="w-full h-11 text-lg font-medium shadow-sm hover:shadow-md transition"
+              onClick={handleSave}
             >
-              Description
-            </label>
-            {errors.description && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.description}
-              </p>
-            )}
-          </div>
+              {editingId ? "Update Post" : "Create Post"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          <div className="flex flex-col gap-2">
-            <input type="file" accept="image/*" onChange={handleImageChange} />
-            {previewImage && (
-              <img
-                src={previewImage}
-                alt="Preview"
-                className="h-40 w-full object-cover rounded border"
-              />
-            )}
-          </div>
-        </div>
-
-        <Button
-          className="w-full h-11 text-lg font-medium shadow-sm hover:shadow-md transition"
-          onClick={handleSave}
-        >
-          {editingId ? "Update Post" : "Create Post"}
-        </Button>
-      </Modal>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the post.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">Yes, Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

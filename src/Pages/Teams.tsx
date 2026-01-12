@@ -5,7 +5,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import UrlBreadcrumb from "@/components/UrlBreadcrumb";
 import { teamRepo } from "@/repositories/teamRepo";
 import { userRepo } from "@/repositories/userRepo";
-import { Input, message, Modal, Select } from "antd";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useEffect, useState } from "react";
 import { MdDeleteSweep, MdEditSquare } from "react-icons/md";
 
@@ -29,41 +62,42 @@ const Teams = () => {
     field: ""
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // ===== API Calls =====
 
 
-const fetchTeams = async (page = 1) => {
-  setLoading(true);
-  try {
-    // Fetch teams with pagination
-    const teamsResponse = await teamRepo.getAllTeams(page, limit);
-    console.log(totalUsers);
-    
-    // Format the teams data
-    const formatted = (teamsResponse.data || []).map((team: any) => {
-      const leader = team.members?.find((m: any) => m.role === "Team Leader");
-      const members = team.members?.filter((m: any) => m.role === "Member") || [];
+  const fetchTeams = async (page = 1) => {
+    setLoading(true);
+    try {
+      // Fetch teams with pagination
+      const teamsResponse = await teamRepo.getAllTeams(page, limit);
+      console.log(totalUsers);
 
-      return {
-        ...team,
-        teamLeader: leader?.user || null, // Direct user object for UI
-        members: members.map((m: any) => m.user).filter(Boolean) // Only user objects, remove nulls
-      };
-    });
+      // Format the teams data
+      const formatted = (teamsResponse.data || []).map((team: any) => {
+        const leader = team.members?.find((m: any) => m.role === "Team Leader");
+        const members = team.members?.filter((m: any) => m.role === "Member") || [];
 
-    // Update state with formatted data
-    setTeams(formatted);
-    setTotalPages(teamsResponse.pagination?.totalPages || 1);
-    setTotalUsers(teamsResponse.pagination?.total || 0);
-    setCurrentPage(teamsResponse.pagination?.currentPage || page);
-  } catch (error) {
-    message.error("Failed to fetch teams");
-    console.error("Fetch error:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+        return {
+          ...team,
+          teamLeader: leader?.user || null, // Direct user object for UI
+          members: members.map((m: any) => m.user).filter(Boolean) // Only user objects, remove nulls
+        };
+      });
+
+      // Update state with formatted data
+      setTeams(formatted);
+      setTotalPages(teamsResponse.pagination?.totalPages || 1);
+      setTotalUsers(teamsResponse.pagination?.total || 0);
+      setCurrentPage(teamsResponse.pagination?.currentPage || page);
+    } catch (error) {
+      toast.error("Failed to fetch teams");
+      console.error("Fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchUsers = async (page = 1) => {
     setLoading(true)
@@ -80,7 +114,7 @@ const fetchTeams = async (page = 1) => {
       setTotalUsers(usersResponse.pagination?.total || 0)
       setCurrentPage(usersResponse.pagination?.currentPage || page)
     } catch (error) {
-      message.error("Failed to fetch users or attendance")
+      toast.error("Failed to fetch users or attendance")
       console.error("Fetch error:", error)
     } finally {
       setLoading(false)
@@ -93,19 +127,19 @@ const fetchTeams = async (page = 1) => {
       const fields = await teamRepo.getfields();
       setFieldEnumValues(fields);
     } catch {
-      message.error("Failed to fetch fields");
+      toast.error("Failed to fetch fields");
     }
   };
 
-   const handlePageChange = (page: number) => {
+  const handlePageChange = (page: number) => {
     setCurrentPage(page)
     fetchTeams(page);
     fetchUsers(page)
   }
 
-useEffect(() => {
+  useEffect(() => {
     let isMounted = true
-    
+
     const initializeData = async () => {
       if (isMounted) {
         await fetchUsers(1)
@@ -113,9 +147,9 @@ useEffect(() => {
         await fetchFields()
       }
     }
-    
+
     initializeData()
-    
+
     return () => {
       isMounted = false
     }
@@ -143,10 +177,10 @@ useEffect(() => {
 
       if (editingId) {
         await teamRepo.updateTeam(editingId, payload);
-        message.success("Team updated successfully");
+        toast.success("Team updated successfully");
       } else {
         await teamRepo.addTeams(payload);
-        message.success("Team added successfully");
+        toast.success("Team added successfully");
       }
 
       setIsModalOpen(false);
@@ -156,28 +190,27 @@ useEffect(() => {
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
       } else {
-        message.error(error.response?.data?.message || "Action failed");
+        toast.error(error.response?.data?.message || "Action failed");
       }
     }
   };
 
 
   const handleDelete = (id: string) => {
-    Modal.confirm({
-      title: "Are you sure you want to delete this team?",
-      okText: "Yes, Delete",
-      okType: "danger",
-      cancelText: "Cancel",
-      onOk: async () => {
-        try {
-          await teamRepo.deleteTeam(id);
-          setTeams(prev => prev.filter(team => team._id !== id));
-          message.success("Team deleted successfully");
-        } catch {
-          message.error("Failed to delete team");
-        }
-      },
-    });
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await teamRepo.deleteTeam(deleteId);
+      setTeams(prev => prev.filter(team => team._id !== deleteId));
+      toast.success("Team deleted successfully");
+    } catch {
+      toast.error("Failed to delete team");
+    } finally {
+      setDeleteId(null);
+    }
   };
 
   const openEditModal = (team: any) => {
@@ -270,99 +303,138 @@ useEffect(() => {
               )}
             </TableBody>
           </Table>
-          
+
         )}
 
-        
+
       </div>
       {totalPages > 1 && (
-                      <div className="p-4 border-t">
-                        <SimplePagination
-                          currentPage={currentPage}
-                          totalPages={totalPages}
-                          onPageChange={handlePageChange}
-                        />
-                      </div>
-                    )}
+        <div className="p-4 border-t">
+          <SimplePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       {/* Modal */}
-      <Modal
-        title={<span className="text-xl font-semibold">{editingId ? "Edit Team" : "Create Team"}</span>}
-        open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          resetForm();
-        }}
-        footer={null}
-        centered
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 mt-7">
-          {/* Team Name */}
-          <Input
-            placeholder="Team Name"
-            value={formData.teamName}
-            onChange={(e) => setFormData((prev) => ({ ...prev, teamName: e.target.value }))}
-          />
-          {errors.teamName && <p className="text-red-500 text-xs">{errors.teamName}</p>}
+      <Dialog open={isModalOpen} onOpenChange={(open) => { setIsModalOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">{editingId ? "Edit Team" : "Create Team"}</DialogTitle>
+          </DialogHeader>
 
-          {/* Leader */}
-          <Select
-            placeholder="Select Team Leader"
-            value={formData.teamLeader || undefined}
-            onChange={(value) => setFormData((prev) => ({ ...prev, teamLeader: value }))}
-            options={allUsers.map((user) => ({
-              label: user.name,
-              value: user._id
-            }))}
-            style={{ width: "100%" }}
-          />
-          {errors.teamLeader && <p className="text-red-500 text-xs">{errors.teamLeader}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 mt-7">
+            {/* Team Name */}
+            <div className="space-y-2">
+              <Input
+                placeholder="Team Name"
+                value={formData.teamName}
+                onChange={(e) => setFormData((prev) => ({ ...prev, teamName: e.target.value }))}
+              />
+              {errors.teamName && <p className="text-red-500 text-xs">{errors.teamName}</p>}
+            </div>
 
-          {/* Members */}
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="Select Members"
-            value={formData.members}
-            onChange={(values) => setFormData((prev) => ({ ...prev, members: values }))}
-            options={allUsers
-              .filter((user) => user._id !== formData.teamLeader)
-              .map((user) => ({
-                label: user.name,
-                value: user._id
-              }))}
-            style={{ width: "100%" }}
-            
-          />
-          {/* {totalPages > 1 && (
-              <div className="p-4 border-t">
-                <SimplePagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
-              </div>
-            )} */}
-          {errors.members && <p className="text-red-500 text-xs">{errors.members}</p>}
+            {/* Leader */}
+            <div className="space-y-2">
+              <Select
+                value={formData.teamLeader}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, teamLeader: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Team Leader" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allUsers.map((user) => (
+                    <SelectItem key={user._id} value={user._id}>{user.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.teamLeader && <p className="text-red-500 text-xs">{errors.teamLeader}</p>}
+            </div>
 
-          {/* Field */}
-          <Select
-            placeholder="Select Field"
-            value={formData.field || undefined}
-            onChange={(value) => setFormData((prev) => ({ ...prev, field: value }))}
-            options={fieldEnumValues.map((field) => ({
-              label: field,
-              value: field
-            }))}
-            style={{ width: "100%" }}
-          />
-          {errors.field && <p className="text-red-500 text-xs">{errors.field}</p>}
-        </div>
+            {/* Members */}
+            <div className="space-y-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal text-muted-foreground">
+                    {formData.members.length > 0
+                      ? `${formData.members.length} Member(s) Selected`
+                      : "Select Members"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 max-h-64 overflow-y-auto">
+                  <DropdownMenuLabel>Select Members</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {allUsers
+                    .filter((user) => user._id !== formData.teamLeader)
+                    .map((user) => (
+                      <DropdownMenuCheckboxItem
+                        key={user._id}
+                        checked={formData.members.includes(user._id)}
+                        onCheckedChange={(checked) => {
+                          setFormData((prev) => {
+                            if (checked) {
+                              return { ...prev, members: [...prev.members, user._id] };
+                            } else {
+                              return {
+                                ...prev,
+                                members: prev.members.filter((id) => id !== user._id),
+                              };
+                            }
+                          });
+                        }}
+                      >
+                        {user.name}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {errors.members && <p className="text-red-500 text-xs">{errors.members}</p>}
+            </div>
 
-        <Button className="w-full h-11 text-lg font-medium" onClick={handleSave}>
-          {editingId ? "Update Team" : "Create Team"}
-        </Button>
-      </Modal>
+            {/* Field */}
+            <div className="space-y-2">
+              <Select
+                value={formData.field}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, field: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Field" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fieldEnumValues.map((field) => (
+                    <SelectItem key={field} value={field}>{field}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.field && <p className="text-red-500 text-xs">{errors.field}</p>}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button className="w-full h-11 text-lg font-medium" onClick={handleSave}>
+              {editingId ? "Update Team" : "Create Team"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this team?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the team.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">Yes, Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

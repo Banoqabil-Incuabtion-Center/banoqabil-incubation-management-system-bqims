@@ -30,15 +30,26 @@ export const useAuthStore = create<AuthState>()(
                     isLoading: false,
                 }),
             setLoading: (loading) => set({ isLoading: loading }),
-            logout: () => {
-                // Clear tokens
-                localStorage.removeItem("token");
-                sessionStorage.removeItem("token");
-                set({
-                    user: null,
-                    isAuthenticated: false,
-                    isLoading: false,
-                });
+            logout: async () => {
+                try {
+                    // Call backend to clear cookies
+                    const { default: api } = await import('@/lib/axios');
+                    await api.post('/api/admin/logout');
+                } catch (error) {
+                    console.error("Logout failed on server", error);
+                } finally {
+                    // Clear tokens locally
+                    localStorage.removeItem("token");
+                    sessionStorage.removeItem("token");
+                    set({
+                        user: null,
+                        isAuthenticated: false,
+                        isLoading: false,
+                    });
+
+                    // Force redirect to login if not handled by component
+                    window.location.href = '/admin/login';
+                }
             },
         }),
         {

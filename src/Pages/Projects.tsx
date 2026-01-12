@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Select, message } from "antd";
-const { Option } = Select;
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { MdDeleteSweep, MdEditSquare } from "react-icons/md";
 import UrlBreadcrumb from "@/components/UrlBreadcrumb";
@@ -9,6 +8,30 @@ import { projectRepo } from "@/repositories/projectRepo";
 import { teamRepo } from "@/repositories/teamRepo";
 import { pmRepo } from "@/repositories/pmRepo";
 import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Project {
   _id: string;
@@ -32,6 +55,7 @@ const Projects = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [file, setFile] = useState<File | null>(null);
 
@@ -48,7 +72,7 @@ const Projects = () => {
       const data = await projectRepo.getAllProjects();
       setProjects(data || []);
     } catch {
-      message.error("Failed to fetch projects");
+      toast.error("Failed to fetch projects");
     } finally {
       setLoading(false);
     }
@@ -63,7 +87,7 @@ const Projects = () => {
       setTeams(Array.isArray(teamsResponse) ? teamsResponse : (teamsResponse?.data || []));
       setPms(Array.isArray(pmsResponse) ? pmsResponse : (pmsResponse?.data || []));
     } catch {
-      message.error("Failed to fetch Teams or PMs");
+      toast.error("Failed to fetch Teams or PMs");
     }
   };
 
@@ -99,10 +123,10 @@ const Projects = () => {
 
       if (editingId) {
         await projectRepo.updateProject(editingId, form, true);
-        message.success("Project updated successfully");
+        toast.success("Project updated successfully");
       } else {
         await projectRepo.createProject(form, true);
-        message.success("Project assigned successfully");
+        toast.success("Project assigned successfully");
       }
       setIsModalOpen(false);
       resetForm();
@@ -111,27 +135,26 @@ const Projects = () => {
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
       } else {
-        message.error(error.response?.data?.message || "Action failed");
+        toast.error(error.response?.data?.message || "Action failed");
       }
     }
   };
 
   const handleDelete = (id: string) => {
-    Modal.confirm({
-      title: "Are you sure you want to delete this project?",
-      okText: "Yes, Delete",
-      okType: "danger",
-      cancelText: "Cancel",
-      onOk: async () => {
-        try {
-          await projectRepo.deleteProject(id);
-          setProjects((prev) => prev.filter((p) => p._id !== id));
-          message.success("Project deleted successfully");
-        } catch {
-          message.error("Failed to delete project");
-        }
-      },
-    });
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await projectRepo.deleteProject(deleteId);
+      setProjects((prev) => prev.filter((p) => p._id !== deleteId));
+      toast.success("Project deleted successfully");
+    } catch {
+      toast.error("Failed to delete project");
+    } finally {
+      setDeleteId(null);
+    }
   };
 
   const openEditModal = (project: Project) => {
@@ -228,132 +251,148 @@ const Projects = () => {
       )}
 
       {/* Assign/Edit Modal */}
-      <Modal
-        title={
-          <span className="text-xl font-semibold mb-3 text-center">
-            {editingId ? "Edit Project" : "Assign Project"}
-          </span>
-        }
-        open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          resetForm();
-        }}
-        footer={null}
-        centered
-      >
-        <div className="grid grid-cols-1 gap-6 mb-6 mt-7">
-          {/* Title Input */}
-          <div className="relative z-0 w-full group">
-            <input
-              type="text"
-              name="title"
-              id="title"
-              value={formData.title}
-              onChange={handleChange}
-              className={`peer block w-full border-0 border-b-2 bg-transparent py-2.5 px-0 text-gray-900 focus:border-blue-600 focus:outline-none ${errors.title ? "border-red-500" : "border-gray-300"
-                }`}
-              placeholder=" "
-              autoComplete="off"
-            />
-            <label
-              htmlFor="title"
-              className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${formData.title
-                ? "-translate-y-6 scale-75 text-blue-600"
-                : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
-                }`}
+      <Dialog open={isModalOpen} onOpenChange={(open) => { setIsModalOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold mb-3 text-center">{editingId ? "Edit Project" : "Assign Project"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-6 mb-6 mt-7">
+            {/* Title Input */}
+            <div className="relative z-0 w-full group">
+              <input
+                type="text"
+                name="title"
+                id="title"
+                value={formData.title}
+                onChange={handleChange}
+                className={`peer block w-full border-0 border-b-2 bg-transparent py-2.5 px-0 text-gray-900 focus:border-blue-600 focus:outline-none ${errors.title ? "border-red-500" : "border-gray-300"
+                  }`}
+                placeholder=" "
+                autoComplete="off"
+              />
+              <label
+                htmlFor="title"
+                className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${formData.title
+                  ? "-translate-y-6 scale-75 text-blue-600"
+                  : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
+                  }`}
+              >
+                Title
+              </label>
+              {errors.title && (
+                <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+              )}
+            </div>
+
+            {/* Team Dropdown */}
+            <div className="relative z-0 w-full group">
+              <Select
+                value={formData.teamName}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, teamName: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a Team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team._id} value={team._id}>
+                      {team.teamName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.teamName && (
+                <p className="text-red-500 text-xs mt-1">{errors.teamName}</p>
+              )}
+            </div>
+
+            {/* PM Dropdown */}
+            <div className="relative z-0 w-full group">
+              <Select
+                value={formData.PM}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, PM: value }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a Project Manager" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pms.map((pm) => (
+                    <SelectItem key={pm._id} value={pm._id}>
+                      {pm.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.PM && <p className="text-red-500 text-xs mt-1">{errors.PM}</p>}
+            </div>
+
+            {/* Description */}
+            <div className="relative z-0 w-full group">
+              <textarea
+                name="description"
+                id="description"
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+                className={`peer block w-full border-0 border-b-2 bg-transparent py-2.5 px-0 text-gray-900 focus:border-blue-600 focus:outline-none ${errors.description ? "border-red-500" : "border-gray-300"
+                  }`}
+                placeholder=" "
+              />
+              <label
+                htmlFor="description"
+                className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${formData.description
+                  ? "-translate-y-6 scale-75 text-blue-600"
+                  : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
+                  }`}
+              >
+                Description
+              </label>
+              {errors.description && (
+                <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+              )}
+            </div>
+
+            {/* File Upload */}
+            <div className="relative z-0 w-full group">
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              // className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+              />
+              <p className="mt-2 text-sm text-gray-500">(Please upload a PDF file)</p>
+              {errors.file && (
+                <p className="text-red-500 text-xs mt-1">{errors.file}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              className="w-full h-11 text-lg font-medium shadow-sm hover:shadow-md transition"
+              onClick={handleSave}
             >
-              Title
-            </label>
-            {errors.title && (
-              <p className="text-red-500 text-xs mt-1">{errors.title}</p>
-            )}
-          </div>
+              {editingId ? "Update Project" : "Assign Project"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {/* Team Dropdown */}
-          <div className="relative z-0 w-full group">
-            <Select
-              value={formData.teamName || undefined}
-              onChange={(value) => setFormData((prev) => ({ ...prev, teamName: value }))}
-              placeholder="Select a Team"
-              className="w-full"
-            >
-              {teams.map((team) => (
-                <Option key={team._id} value={team._id}>
-                  {team.teamName}
-                </Option>
-              ))}
-            </Select>
-            {errors.teamName && (
-              <p className="text-red-500 text-xs mt-1">{errors.teamName}</p>
-            )}
-          </div>
-
-          {/* PM Dropdown (AntD Select) */}
-          <div className="relative z-0 w-full group">
-            <Select
-              value={formData.PM || undefined}
-              onChange={(value) => setFormData((prev) => ({ ...prev, PM: value }))}
-              placeholder="Select a Project Manager"
-              className="w-full"
-            >
-              {pms.map((pm) => (
-                <Option key={pm._id} value={pm._id}>
-                  {pm.name}
-                </Option>
-              ))}
-            </Select>
-            {errors.PM && <p className="text-red-500 text-xs mt-1">{errors.PM}</p>}
-          </div>
-
-          {/* Description */}
-          <div className="relative z-0 w-full group">
-            <textarea
-              name="description"
-              id="description"
-              rows={4}
-              value={formData.description}
-              onChange={handleChange}
-              className={`peer block w-full border-0 border-b-2 bg-transparent py-2.5 px-0 text-gray-900 focus:border-blue-600 focus:outline-none ${errors.description ? "border-red-500" : "border-gray-300"
-                }`}
-              placeholder=" "
-            />
-            <label
-              htmlFor="description"
-              className={`absolute top-3 origin-[0] transform text-gray-500 duration-200 ${formData.description
-                ? "-translate-y-6 scale-75 text-blue-600"
-                : "peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-blue-600"
-                }`}
-            >
-              Description
-            </label>
-            {errors.description && (
-              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-            )}
-          </div>
-
-          {/* File Upload */}
-          <div className="relative z-0 w-full group">
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            // className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-            />
-            <p className="mt-2 text-sm text-gray-500">(Please upload a PDF file)</p>
-            {errors.file && (
-              <p className="text-red-500 text-xs mt-1">{errors.file}</p>
-            )}
-          </div>
-        </div>
-
-        <Button
-          className="w-full h-11 text-lg font-medium shadow-sm hover:shadow-md transition"
-          onClick={handleSave}
-        >
-          {editingId ? "Update Project" : "Assign Project"}
-        </Button>
-      </Modal>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the project.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">Yes, Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { App as AntdApp } from "antd";
+
 import Page from "./Pages/Dashboard";
 import Students from "./Pages/Students";
 import Posts from "./Pages/Posts";
@@ -15,29 +15,35 @@ import Login from "./auth/Login";
 import { Toaster } from "@/components/ui/sonner";
 
 
+import { ThemeProvider } from "@/components/theme-provider";
+
+import { App as AntdApp } from "antd";
+
 const App = () => {
   return (
     <AntdApp>
-      <Router>
-        <Toaster />
-        <Routes>
-          <Route path="/admin/login" element={<Login />} />
-          <Route path="/" element={<PrivateRoute> <UserLayout /> </PrivateRoute>}>
-            <Route index element={<Page />} />
-            <Route path="/admin/students" element={<Students />} />
-            <Route path="/admin/posts" element={<Posts />} />
-            <Route path="/admin/teams" element={<Teams />} />
-            <Route path="/admin/projects" element={<Projects />} />
-            <Route path="/admin/pm" element={<Managers />} />
-            <Route path="/admin/attendance" element={<Attendance />} />
-            <Route path="/admin/attendance/settings" element={<AttendanceSettings />} />
-            <Route path="/admin/calendar" element={<AdminCalendar />} />
-          </Route>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <Router>
+          <Toaster />
+          <Routes>
+            <Route path="/admin/login" element={<Login />} />
+            <Route path="/" element={<PrivateRoute> <UserLayout /> </PrivateRoute>}>
+              <Route index element={<Page />} />
+              <Route path="/admin/students" element={<Students />} />
+              <Route path="/admin/posts" element={<Posts />} />
+              <Route path="/admin/teams" element={<Teams />} />
+              <Route path="/admin/projects" element={<Projects />} />
+              <Route path="/admin/pm" element={<Managers />} />
+              <Route path="/admin/attendance" element={<Attendance />} />
+              <Route path="/admin/attendance/settings" element={<AttendanceSettings />} />
+              <Route path="/admin/calendar" element={<AdminCalendar />} />
+            </Route>
 
-          {/* Catch all - redirect to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+            {/* Catch all - redirect to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </ThemeProvider>
     </AntdApp>
   )
 }
