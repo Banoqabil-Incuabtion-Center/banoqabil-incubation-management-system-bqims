@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { attendanceRepo } from "@/repositories/attendanceRepo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -83,7 +83,7 @@ const Attendance = () => {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [totalRecords, setTotalRecords] = useState(0)
+
   const [limit] = useState(15)
   const [stats, setStats] = useState({ total: 0, present: 0, late: 0, absent: 0 })
   const [calendarInfo, setCalendarInfo] = useState<any>(null)
@@ -155,7 +155,7 @@ const Attendance = () => {
 
       setFilteredHistory(transformed)
       setTotalPages(response.pagination?.totalPages || 1)
-      setTotalRecords(response.pagination?.total || 0)
+
       setStats(response.stats || { total: 0, present: 0, late: 0, absent: 0 })
       setCalendarInfo(response.calendarInfo || null)
       setCurrentPage(page)
