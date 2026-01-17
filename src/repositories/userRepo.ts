@@ -30,6 +30,18 @@ export class UserRepo {
     return response.data
   }
 
+  // Verify user by ID
+  async verifyUser(id: string) {
+    const response = await api.patch(`/api/user/verify-user/${id}`)
+    return response.data
+  }
+
+  // Resend verification email
+  async resendVerification(email: string) {
+    const response = await api.post("/api/user/resend-verification", { email })
+    return response.data
+  }
+
   async loginAdmin(Data: any) {
     const response = await api.post(`/api/admin/login`, Data)
     return response.data

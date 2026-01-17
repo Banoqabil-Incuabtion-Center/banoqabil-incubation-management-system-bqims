@@ -62,6 +62,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   "Early Leave": { bg: "bg-orange-100 dark:bg-orange-950", text: "text-orange-700 dark:text-orange-400" },
   "Checked In": { bg: "bg-blue-100 dark:bg-blue-950", text: "text-blue-700 dark:text-blue-400" },
   "Off Day": { bg: "bg-purple-100 dark:bg-purple-950", text: "text-purple-700 dark:text-purple-400" },
+  Holiday: { bg: "bg-red-100 dark:bg-red-950", text: "text-red-700 dark:text-red-400" },
 }
 
 const DATE_FILTERS = [

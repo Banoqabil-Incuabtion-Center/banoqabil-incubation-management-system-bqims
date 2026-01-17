@@ -57,6 +57,8 @@ import {
   IconUsers,
   IconGenderMale,
   IconClock,
+  IconCheck,
+  IconMail,
 } from "@tabler/icons-react"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -74,6 +76,7 @@ interface Student {
   location: string
   avatar?: string
   CNIC: string
+  isVerified?: boolean
 }
 
 interface Enums {
@@ -227,6 +230,27 @@ const Students: React.FC = () => {
       fetchUsers(currentPage, searchTerm)
     } catch {
       toast.error("Failed to delete student")
+    }
+  }
+
+  const handleVerify = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to verify ${name}?`)) return
+    try {
+      await userRepo.verifyUser(id)
+      toast.success("Student verified successfully")
+      fetchUsers(currentPage, searchTerm)
+    } catch {
+      toast.error("Failed to verify student")
+    }
+  }
+
+  const handleResend = async (user: Student) => {
+    if (!confirm(`Resend verification email to ${user.name}?`)) return
+    try {
+      await userRepo.resendVerification(user.email)
+      toast.success("Verification email sent")
+    } catch {
+      toast.error("Failed to send email")
     }
   }
 
@@ -407,14 +431,24 @@ const Students: React.FC = () => {
                   <TableRow key={user._id} className="group hover:bg-muted/30">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar className="size-10 border">
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback className="bg-primary/5 text-primary text-xs font-semibold">
-                            {getInitials(user.name || "UN")}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className="size-10 border">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback className="bg-primary/5 text-primary text-xs font-semibold">
+                              {getInitials(user.name || "UN")}
+                            </AvatarFallback>
+                          </Avatar>
+                          {user.isVerified && (
+                            <div className="absolute -bottom-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border-2 border-background" title="Verified User">
+                              <IconCheck size={10} strokeWidth={4} />
+                            </div>
+                          )}
+                        </div>
                         <div>
-                          <p className="font-medium text-sm leading-none mb-1">{user.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm leading-none mb-1">{user.name}</p>
+                            {user.isVerified && <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-green-500/10 text-green-600 border-none">Verified</Badge>}
+                          </div>
                           <p className="text-xs text-muted-foreground">{user.email}</p>
                         </div>
                       </div>
@@ -456,6 +490,16 @@ const Students: React.FC = () => {
                         <Button variant="ghost" size="icon" className="size-8" onClick={() => onEditClick(user)}>
                           <IconEdit size={16} />
                         </Button>
+                        {!user.isVerified && (
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="size-8 text-green-600 hover:text-green-700 hover:bg-green-50" title="Verify User" onClick={() => handleVerify(user._id, user.name)}>
+                              <IconCheck size={16} />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="size-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="Resend Verification Email" onClick={() => handleResend(user)}>
+                              <IconMail size={16} />
+                            </Button>
+                          </div>
+                        )}
                         <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(user._id, user.name)}>
                           <IconTrash size={16} />
                         </Button>
