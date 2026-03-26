@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react"
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+import {
+  IconUsers,
+  IconUserShield,
+  IconFolderFilled,
+  IconUsersGroup,
+  IconClipboardCheck,
+  IconTrendingUp,
+  IconTrendingDown,
+} from "@tabler/icons-react"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -9,130 +17,114 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import type { DashboardStats } from "@/repositories/dashboardRepo"
 
-export function SectionCards() {
-  const [students, setStudents] = useState(0)
-  const [pm, setPm] = useState(0)
-  const [projects, setProjects] = useState(0)
-  const [teams, setTeams] = useState(0)
+interface SectionCardsProps {
+  stats: DashboardStats | null
+  loading?: boolean
+}
 
-  useEffect(() => {
-    // Fetch Students
-    fetch("http://localhost:3000/api/user/signup")
-      .then((res) => res.json())
-      .then((data) => setStudents(data.length || 0))
-      .catch((err) => console.error("Students Error:", err))
+const kpiCards = [
+  {
+    key: "totalStudents" as const,
+    label: "Total Students",
+    icon: IconUsers,
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+    description: "Enrolled incubatees",
+  },
+  {
+    key: "totalPMs" as const,
+    label: "Project Managers",
+    icon: IconUserShield,
+    color: "text-violet-500",
+    bgColor: "bg-violet-500/10",
+    description: "Assigned mentors",
+  },
+  {
+    key: "totalTeams" as const,
+    label: "Active Teams",
+    icon: IconUsersGroup,
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+    description: "Collaborative groups",
+  },
+  {
+    key: "totalProjects" as const,
+    label: "Active Projects",
+    icon: IconFolderFilled,
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    description: "In-progress projects",
+  },
+]
 
-    // Fetch PMs
-    fetch("http://localhost:3000/api/admin/pm")
-      .then((res) => res.json())
-      .then((data) => setPm(data.length || 0))
-      .catch((err) => console.error("PM Error:", err))
-
-    // Fetch Projects
-    fetch("http://localhost:3000/api/admin/project")
-      .then((res) => res.json())
-      .then((data) => setProjects(data.length || 0))
-      .catch((err) => console.error("Projects Error:", err))
-
-    // Fetch Teams
-    fetch("http://localhost:3000/api/admin/team")
-      .then((res) => res.json())
-      .then((data) => setTeams(data.length || 0))
-      .catch((err) => console.error("Teams Error:", err))
-  }, [])
+export function SectionCards({ stats, loading }: SectionCardsProps) {
+  const attendanceRate = stats?.todayAttendance?.rate ?? 0
+  const attendanceColor =
+    attendanceRate >= 75
+      ? "text-emerald-500"
+      : attendanceRate >= 50
+        ? "text-amber-500"
+        : "text-red-500"
 
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      {/* Students */}
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Total Students</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {students}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp /> +12.5%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Trending up this month <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Visitors for the last 6 months
-          </div>
-        </CardFooter>
-      </Card>
+    <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-5">
+      {kpiCards.map((kpi) => {
+        const Icon = kpi.icon
+        const value = stats ? stats[kpi.key] : 0
+        return (
+          <Card
+            key={kpi.key}
+            className="@container/card relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/80 shadow-md hover:shadow-lg transition-shadow"
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardDescription className="text-xs font-medium uppercase tracking-wider opacity-70">
+                  {kpi.label}
+                </CardDescription>
+                <div className={`rounded-lg p-2 ${kpi.bgColor}`}>
+                  <Icon className={`size-4 ${kpi.color}`} />
+                </div>
+              </div>
+              <CardTitle className="text-3xl font-bold tabular-nums tracking-tight">
+                {loading ? (
+                  <span className="inline-block h-9 w-16 animate-pulse rounded bg-muted" />
+                ) : (
+                  value
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardFooter className="pt-0 pb-3">
+              <p className="text-xs text-muted-foreground">{kpi.description}</p>
+            </CardFooter>
+          </Card>
+        )
+      })}
 
-      {/* PM */}
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Total PM</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {pm}
+      {/* Today's Attendance Rate Card */}
+      <Card className="@container/card relative overflow-hidden border-0 bg-gradient-to-br from-card to-card/80 shadow-md hover:shadow-lg transition-shadow">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardDescription className="text-xs font-medium uppercase tracking-wider opacity-70">
+              Today's Attendance
+            </CardDescription>
+            <div className="rounded-lg p-2 bg-teal-500/10">
+              <IconClipboardCheck className="size-4 text-teal-500" />
+            </div>
+          </div>
+          <CardTitle className={`text-3xl font-bold tabular-nums tracking-tight ${attendanceColor}`}>
+            {loading ? (
+              <span className="inline-block h-9 w-16 animate-pulse rounded bg-muted" />
+            ) : (
+              `${attendanceRate}%`
+            )}
           </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingDown /> -20%
-            </Badge>
-          </CardAction>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Acquisition needs attention
-          </div>
-        </CardFooter>
-      </Card>
-
-      {/* Projects */}
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Total Active Projects</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {projects}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp /> +12.5%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Engagement exceed targets
-          </div>
-        </CardFooter>
-      </Card>
-
-      {/* Teams */}
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>Total Teams</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {teams}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp /> +4.5%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Steady performance increase <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Meets growth projections
-          </div>
+        <CardFooter className="flex items-center gap-2 pt-0 pb-3">
+          <p className="text-xs text-muted-foreground">
+            {stats ? `${stats.todayAttendance.present} of ${stats.totalStudents} present` : "—"}
+          </p>
         </CardFooter>
       </Card>
     </div>
