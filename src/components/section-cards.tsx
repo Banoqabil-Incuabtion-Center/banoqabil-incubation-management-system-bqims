@@ -1,17 +1,12 @@
-import { useEffect, useState } from "react"
 import {
   IconUsers,
   IconUserShield,
   IconFolderFilled,
   IconUsersGroup,
   IconClipboardCheck,
-  IconTrendingUp,
-  IconTrendingDown,
 } from "@tabler/icons-react"
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
-  CardAction,
   CardDescription,
   CardFooter,
   CardHeader,
