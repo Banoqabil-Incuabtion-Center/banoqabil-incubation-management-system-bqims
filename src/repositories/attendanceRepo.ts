@@ -54,6 +54,12 @@ export class AttendanceRepo {
     return res.data
   }
 
+  // ✅ Fetch server-detected client IP
+  async checkIP() {
+    const res = await api.get("/api/attendance/check-ip")
+    return res.data
+  }
+
 }
 
 export const attendanceRepo = new AttendanceRepo()

@@ -37,6 +37,7 @@ const AttendanceSettings = () => {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [ipInput, setIpInput] = useState("")
+    const [currentIP, setCurrentIP] = useState("")
 
     useEffect(() => {
         fetchSettings()
@@ -46,6 +47,14 @@ const AttendanceSettings = () => {
         try {
             const data = await attendanceRepo.getSettings()
             setSettings(data.settings || data)
+            try {
+                const ipData = await attendanceRepo.checkIP()
+                if (ipData && ipData.clientIP) {
+                    setCurrentIP(ipData.clientIP)
+                }
+            } catch (ipErr) {
+                console.error("Failed to fetch client IP:", ipErr)
+            }
         } catch (error) {
             toast.error("Failed to load settings")
             console.error(error)
@@ -271,7 +280,7 @@ const AttendanceSettings = () => {
                         </div>
                     </div>
 
-                    {/* Allowed IPs */}
+                     {/* Allowed IPs */}
                     <div className="space-y-2">
                         <Label className="text-xs font-medium text-muted-foreground">Allowed IPs</Label>
                         <div className="flex gap-2">
@@ -287,6 +296,31 @@ const AttendanceSettings = () => {
                                 Add
                             </Button>
                         </div>
+                        {currentIP && (
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 gap-2 rounded-lg bg-secondary/50 border text-sm mt-2">
+                                <div>
+                                    <span className="text-muted-foreground">Your Current IP: </span>
+                                    <code className="font-mono font-bold text-foreground bg-background px-1.5 py-0.5 rounded border">{currentIP}</code>
+                                </div>
+                                {!settings.allowedIPs.includes(currentIP) ? (
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => {
+                                            setSettings({
+                                                ...settings,
+                                                allowedIPs: [...settings.allowedIPs, currentIP]
+                                            });
+                                            toast.success(`Added ${currentIP} to whitelist (Don't forget to save changes!)`);
+                                        }}
+                                    >
+                                        Whitelist My IP
+                                    </Button>
+                                ) : (
+                                    <span className="text-xs text-green-500 font-medium">✓ Whitelisted</span>
+                                )}
+                            </div>
+                        )}
                         {settings.allowedIPs.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
                                 {settings.allowedIPs.map((ip) => (
