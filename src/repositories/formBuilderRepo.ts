@@ -14,17 +14,19 @@ export type FieldType =
   | "file";
 
 export interface FormField {
-  id: string;
+  id: string; // MongoDB _id
+  name: string; // Unique field key (e.g. fullName, cnicNumber, custom_field)
   label: string;
   type: FieldType;
   placeholder?: string;
   required: boolean;
   options?: string[];
   order: number;
+  section: string;
 }
 
 export interface FormSection {
-  id: string;
+  id: string; // Section name / identifier
   title: string;
   description?: string;
   order: number;
@@ -38,186 +40,277 @@ export interface FormData {
   sections: FormSection[];
 }
 
+// ----------------------------------------------------
+// Canonical Section Definitions
+// ----------------------------------------------------
+export const CANONICAL_SECTIONS = [
+  {
+    id: "Personal Information",
+    title: "Personal Information",
+    description: "Please provide your personal information.",
+    order: 0,
+  },
+  {
+    id: "Contact Information",
+    title: "Contact Information",
+    description: "Please provide your contact information.",
+    order: 1,
+  },
+  {
+    id: "Course & Campus Details",
+    title: "Course & Campus Details",
+    description: "Please provide your course and campus preferences.",
+    order: 2,
+  },
+];
+
+// ----------------------------------------------------
+// Official Bano Qabil Courses (26 Options from Source)
+// ----------------------------------------------------
+export const BANO_QABIL_COURSES: string[] = [
+  "AI for Everyone",
+  "Backend Development with Node.js",
+  "CIT & Programming Foundations",
+  "Computer Information and Technology (CIT)",
+  "Cyber Security Essentials",
+  "Data Analytics & Business Intelligence",
+  "DevOps Foundations",
+  "Digital Content Creation",
+  "Digital Forensic and Ethical Hacking",
+  "Digital Journalism",
+  "Digital Marketing",
+  "E-Commerce Development Mastery",
+  "E-Commerce Marketplace",
+  "Essentials for AI & Prompt Mastery",
+  "Freelancing & Tech Sales Mastery",
+  "Frontend Web Development",
+  "Game Development with Blender",
+  "Game Development with Unity",
+  "Generative AI",
+  "Graphic Designing",
+  "Mobile Application Development with Flutter",
+  "Social Media Management",
+  "SQA & Test Automation",
+  "UI/UX Design with Figma",
+  "Video Editing & Animations",
+  "Web Development with AI",
+];
+
+// ----------------------------------------------------
+// Official Bano Qabil Campuses (32 Karachi Campuses from Source)
+// ----------------------------------------------------
+export const BANO_QABIL_CAMPUSES: string[] = [
+  "Al Huda Campus (North Karachi - Power House)",
+  "Al-Aqsa Campus (Gulshan-e-Iqbal 13D)",
+  "Anjuman Complex Campus (Sakhi Hasan)",
+  "Askari Degree College (Bahadurabad)",
+  "Bahadurabad Campus - Escuela Schooling System",
+  "Bahria Town Campus",
+  "BanoQabil Shah Latif Town Campus",
+  "Clifton Campus",
+  "Dr. Mehmood Hussain Campus (Shahfaisal Town)",
+  "Etawa Campus (Gulshan-e-Maymar)",
+  "Garden Campus",
+  "Gulberg Campus",
+  "Gulshan-e-Hadeed Campus",
+  "Gulshan-e-Iqbal Campus - Circle Social Welfare",
+  "HOL Kara Bai Campus (Lyari)",
+  "Harmain Campus (P.E.C.H.S-6)",
+  "Idara Noor-e-Haq Campus",
+  "Jamia Millia School Campus (Shah Faisal)",
+  "Jamia Tul Ansar Campus",
+  "KMA Protech Institute Campus",
+  "Kausar Town Campus (Malir)",
+  "Korangi Allah Wala Town Campus",
+  "Landhi#6 Campus",
+  "Liaquatabad Campus",
+  "Metroville Campus",
+  "North Karachi Campus - 11L",
+  "Orangi Town 11 ½ Campus - Salman Farsi",
+  "PIA Society Campus",
+  "Pakistan Central Homeopathic Medical College (Nazimabad)",
+  "Piston College Campus",
+  "SKIT - Keamari Campus",
+  "Sherwani Suites Campus",
+];
+
+// ----------------------------------------------------
+// 14 Default Registration Form Fields (Step 2 Spec)
+// ----------------------------------------------------
+export const DEFAULT_FORM_FIELDS: Array<{
+  section: string;
+  name: string;
+  label: string;
+  type: FieldType;
+  placeholder: string;
+  required: boolean;
+  options: string[];
+}> = [
+  // STEP 1 — PERSONAL INFORMATION
+  {
+    section: "Personal Information",
+    name: "fullName",
+    label: "Full name",
+    type: "text",
+    placeholder: "e.g. MUHAMMAD ALI",
+    required: true,
+    options: [],
+  },
+  {
+    section: "Personal Information",
+    name: "dateOfBirth",
+    label: "Date of birth",
+    type: "date",
+    placeholder: "",
+    required: true,
+    options: [],
+  },
+  {
+    section: "Personal Information",
+    name: "gender",
+    label: "Gender",
+    type: "radio",
+    placeholder: "",
+    required: true,
+    options: ["Male", "Female"],
+  },
+  {
+    section: "Personal Information",
+    name: "cnicNumber",
+    label: "CNIC number",
+    type: "text",
+    placeholder: "e.g. 42101-1234567-1",
+    required: true,
+    options: [],
+  },
+  {
+    section: "Personal Information",
+    name: "fatherOrGuardianName",
+    label: "Father/Guardian name",
+    type: "text",
+    placeholder: "e.g. ABDUL REHMAN",
+    required: true,
+    options: [],
+  },
+  {
+    section: "Personal Information",
+    name: "aboutYou",
+    label: "About yourself",
+    type: "textarea",
+    placeholder:
+      "Briefly introduce yourself, your interests, skills, and goals...",
+    required: true,
+    options: [],
+  },
+
+  // STEP 2 — CONTACT INFORMATION
+  {
+    section: "Contact Information",
+    name: "address",
+    label: "Address",
+    type: "text",
+    placeholder: "e.g. House #, Street, Area, City",
+    required: true,
+    options: [],
+  },
+  {
+    section: "Contact Information",
+    name: "emailAddress",
+    label: "Email address",
+    type: "email",
+    placeholder: "e.g. student@example.com",
+    required: true,
+    options: [],
+  },
+  {
+    section: "Contact Information",
+    name: "phoneNumber",
+    label: "Phone number",
+    type: "phone",
+    placeholder: "300 1234567",
+    required: true,
+    options: [],
+  },
+  {
+    section: "Contact Information",
+    name: "guardianNumber",
+    label: "Guardian number",
+    type: "phone",
+    placeholder: "300 1234567",
+    required: false,
+    options: [],
+  },
+
+  // STEP 3 — COURSE & CAMPUS DETAILS
+  {
+    section: "Course & Campus Details",
+    name: "course",
+    label: "Course",
+    type: "select",
+    placeholder: "Select course",
+    required: true,
+    options: BANO_QABIL_COURSES,
+  },
+  {
+    section: "Course & Campus Details",
+    name: "teacherName",
+    label: "Teacher name",
+    type: "text",
+    placeholder: "e.g. Sir Kashif",
+    required: true,
+    options: [],
+  },
+  {
+    section: "Course & Campus Details",
+    name: "campus",
+    label: "Campus",
+    type: "select",
+    placeholder: "Select Karachi campus",
+    required: true,
+    options: BANO_QABIL_CAMPUSES,
+  },
+  {
+    section: "Course & Campus Details",
+    name: "obtainedMarks",
+    label: "Obtained marks",
+    type: "number",
+    placeholder: "e.g. 85 or 85%",
+    required: true,
+    options: [],
+  },
+];
+
+// Fallback initial default form in memory structure
 export const initialDefaultForm: FormData = {
   formKey: "internship_registration",
   title: "Registration Form",
-  subtitle: "Manage the fields and sections used in the internship registration form.",
-  sections: [
-    {
-      id: "personal_information",
-      title: "Personal Information",
-      description: "Please provide your personal information.",
-      order: 0,
-      fields: [
-        {
-          id: "full_name",
-          label: "Full name",
-          type: "text",
-          placeholder: "Enter your full name",
-          required: true,
-          options: [],
-          order: 0,
-        },
-        {
-          id: "date_of_birth",
-          label: "Date of birth",
-          type: "date",
-          placeholder: "",
-          required: true,
-          options: [],
-          order: 1,
-        },
-        {
-          id: "gender",
-          label: "Gender",
-          type: "radio",
-          placeholder: "",
-          required: true,
-          options: ["Male", "Female"],
-          order: 2,
-        },
-        {
-          id: "cnic_number",
-          label: "CNIC number",
-          type: "text",
-          placeholder: "42101-xxxxxxx-x",
-          required: true,
-          options: [],
-          order: 3,
-        },
-        {
-          id: "father_guardian_name",
-          label: "Father/Guardian name",
-          type: "text",
-          placeholder: "Enter father or guardian name",
-          required: true,
-          options: [],
-          order: 4,
-        },
-        {
-          id: "about_yourself",
-          label: "About yourself",
-          type: "textarea",
-          placeholder: "Tell us a bit about yourself",
-          required: true,
-          options: [],
-          order: 5,
-        },
-      ],
-    },
-    {
-      id: "contact_information",
-      title: "Contact Information",
-      description: "Please provide your contact information.",
-      order: 1,
-      fields: [
-        {
-          id: "address",
-          label: "Address",
-          type: "text",
-          placeholder: "Enter residential address",
-          required: true,
-          options: [],
-          order: 0,
-        },
-        {
-          id: "email_address",
-          label: "Email address",
-          type: "email",
-          placeholder: "example@domain.com",
-          required: true,
-          options: [],
-          order: 1,
-        },
-        {
-          id: "phone_number",
-          label: "Phone number",
-          type: "phone",
-          placeholder: "0300-1234567",
-          required: true,
-          options: [],
-          order: 2,
-        },
-        {
-          id: "guardian_number",
-          label: "Guardian number",
-          type: "phone",
-          placeholder: "0300-1234567",
-          required: false,
-          options: [],
-          order: 3,
-        },
-      ],
-    },
-    {
-      id: "course_campus_details",
-      title: "Course & Campus Details",
-      description: "Please provide your course and campus preferences.",
-      order: 2,
-      fields: [
-        {
-          id: "course",
-          label: "Course",
-          type: "select",
-          placeholder: "Select your course",
-          required: true,
-          options: [
-            "Web Development",
-            "Mobile App Development",
-            "Cyber Security",
-            "Game Development with Unity",
-            "Graphic Designing",
-            "Digital Marketing",
-            "Data Science",
-            "Data Analytics",
-            "E-commerce",
-            "Content Writing",
-            "Video Editing",
-          ],
-          order: 0,
-        },
-        {
-          id: "teacher_name",
-          label: "Teacher name",
-          type: "text",
-          placeholder: "Enter teacher / instructor name",
-          required: true,
-          options: [],
-          order: 1,
-        },
-        {
-          id: "campus",
-          label: "Campus",
-          type: "select",
-          placeholder: "Select campus",
-          required: true,
-          options: [
-            "Bahadurabad",
-            "Expo (Fossphorus)",
-            "Clifton",
-            "Idarah Noor e Haq",
-            "Jamia Millia",
-          ],
-          order: 2,
-        },
-        {
-          id: "obtained_marks",
-          label: "Obtained marks",
-          type: "number",
-          placeholder: "Enter marks obtained",
-          required: true,
-          options: [],
-          order: 3,
-        },
-      ],
-    },
-  ],
+  subtitle:
+    "Manage the fields and sections used in the internship registration form.",
+  sections: CANONICAL_SECTIONS.map((sec) => ({
+    id: sec.id,
+    title: sec.title,
+    description: sec.description,
+    order: sec.order,
+    fields: DEFAULT_FORM_FIELDS.filter((f) => f.section === sec.title).map(
+      (f, idx) => ({
+        id: `def_${f.name}`,
+        name: f.name,
+        label: f.label,
+        type: f.type,
+        placeholder: f.placeholder,
+        required: f.required,
+        options: f.options,
+        order: idx,
+        section: f.section,
+      })
+    ),
+  })),
 };
 
 export class FormBuilderRepo {
   private localKey = "ims_form_builder_state";
+  private isSeeding = false;
 
-  // Cache fallback to persist locally if backend unreachable
   private saveToLocal(form: FormData) {
     try {
       localStorage.setItem(this.localKey, JSON.stringify(form));
@@ -236,68 +329,249 @@ export class FormBuilderRepo {
     return initialDefaultForm;
   }
 
-  // ✅ Get form configuration
+  // Convert raw backend grouped data into standard FormData
+  private transformBackendData(groupedData: Record<string, any[]>): FormData {
+    const sectionMap = new Map<string, FormField[]>();
+
+    // Initialize with canonical sections to keep stable ordering
+    CANONICAL_SECTIONS.forEach((sec) => {
+      sectionMap.set(sec.title, []);
+    });
+
+    // Populate fields into their respective sections
+    Object.entries(groupedData || {}).forEach(([sectionName, fields]) => {
+      if (!sectionMap.has(sectionName)) {
+        sectionMap.set(sectionName, []);
+      }
+      const existing = sectionMap.get(sectionName)!;
+      fields.forEach((f: any, idx: number) => {
+        existing.push({
+          id: f._id || f.id || f.name,
+          name: f.name || f.label.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+          label: f.label,
+          type: (f.type as FieldType) || "text",
+          placeholder: f.placeholder || "",
+          required: Boolean(f.required),
+          options: Array.isArray(f.options) ? f.options : [],
+          order: idx,
+          section: f.section || sectionName,
+        });
+      });
+    });
+
+    const sections: FormSection[] = [];
+    let secOrder = 0;
+
+    // First add canonical sections
+    CANONICAL_SECTIONS.forEach((canonical) => {
+      const fields = sectionMap.get(canonical.title) || [];
+      sections.push({
+        id: canonical.title,
+        title: canonical.title,
+        description: canonical.description,
+        order: secOrder++,
+        fields,
+      });
+      sectionMap.delete(canonical.title);
+    });
+
+    // Add any remaining custom sections
+    sectionMap.forEach((fields, title) => {
+      sections.push({
+        id: title,
+        title,
+        description: `Fields configured under ${title}`,
+        order: secOrder++,
+        fields,
+      });
+    });
+
+    return {
+      formKey: "internship_registration",
+      title: "Registration Form",
+      subtitle:
+        "Manage the fields and sections used in the internship registration form.",
+      sections,
+    };
+  }
+
+  // Safe Seeder: Seed 14 default registration fields into backend if missing
+  private async seedDefaultFields(): Promise<void> {
+    if (this.isSeeding) return;
+    this.isSeeding = true;
+    try {
+      for (const field of DEFAULT_FORM_FIELDS) {
+        try {
+          await api.post("/api/form-config", field);
+        } catch (err: any) {
+          // If already exists (400), ignore and continue
+          if (err.response?.status !== 400) {
+            console.warn(`Could not seed field ${field.name}:`, err.message);
+          }
+        }
+      }
+    } finally {
+      this.isSeeding = false;
+    }
+  }
+
+  // ✅ Fetch Form (Admin)
   async getForm(): Promise<FormData> {
     try {
-      const res = await api.get("/api/form-builder");
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
+      const res = await api.get("/api/form-config");
+      const grouped = res.data?.data || {};
+      const totalFields = Object.values(grouped).reduce(
+        (sum: number, arr: any) => sum + (Array.isArray(arr) ? arr.length : 0),
+        0
+      );
+
+      // If backend has 0 fields or only empty groups, automatically seed the 14 default fields
+      if (totalFields === 0) {
+        await this.seedDefaultFields();
+        const refreshed = await api.get("/api/form-config");
+        const formatted = this.transformBackendData(refreshed.data?.data || {});
+        this.saveToLocal(formatted);
+        return formatted;
       }
+
+      // If existing DB records for course or campus have incomplete options (e.g. only 4-5 options from old seed),
+      // sync them with the full official options list from the registration form
+      let needsRefresh = false;
+      const allFields: any[] = Object.values(grouped).flat();
+      for (const field of allFields) {
+        if (
+          field.name === "course" &&
+          Array.isArray(field.options) &&
+          field.options.length < BANO_QABIL_COURSES.length
+        ) {
+          try {
+            await api.put(`/api/form-config/${field._id}`, {
+              options: BANO_QABIL_COURSES,
+            });
+            needsRefresh = true;
+          } catch (e) {
+            console.warn("Failed to sync course options:", e);
+          }
+        }
+        if (
+          field.name === "campus" &&
+          Array.isArray(field.options) &&
+          field.options.length < BANO_QABIL_CAMPUSES.length
+        ) {
+          try {
+            await api.put(`/api/form-config/${field._id}`, {
+              options: BANO_QABIL_CAMPUSES,
+            });
+            needsRefresh = true;
+          } catch (e) {
+            console.warn("Failed to sync campus options:", e);
+          }
+        }
+      }
+
+      if (needsRefresh) {
+        const refreshed = await api.get("/api/form-config");
+        const formatted = this.transformBackendData(refreshed.data?.data || {});
+        this.saveToLocal(formatted);
+        return formatted;
+      }
+
+      const formatted = this.transformBackendData(grouped);
+      this.saveToLocal(formatted);
+      return formatted;
     } catch (err) {
-      console.warn("Backend /api/form-builder not reachable, using cached form:", err);
+      console.warn("Backend /api/form-config error, using cached form:", err);
+      return this.getFromLocal();
     }
-    return this.getFromLocal();
   }
 
-  // ✅ Get public form schema (unauthenticated)
+  // ✅ Fetch Public Form (Candidate Application)
   async getPublicForm(): Promise<FormData> {
-    try {
-      const res = await api.get("/api/form-builder/public");
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
-      }
-    } catch (err) {
-      console.warn("Backend /api/form-builder/public not reachable, using cached form:", err);
-    }
-    return this.getFromLocal();
+    return this.getForm();
   }
 
-  // ✅ Update form details
-  async updateForm(data: Partial<FormData>): Promise<FormData> {
-    try {
-      const res = await api.put("/api/form-builder", data);
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
-      }
-    } catch (err) {
-      console.error("Failed to update form on server:", err);
+  // ✅ Add Field
+  async addField(
+    sectionId: string,
+    field: Omit<FormField, "id" | "order" | "name" | "section"> & {
+      name?: string;
     }
-    const current = this.getFromLocal();
-    const updated = { ...current, ...data };
-    this.saveToLocal(updated);
-    return updated;
+  ): Promise<FormData> {
+    const baseName =
+      field.name ||
+      field.label.toLowerCase().replace(/[^a-z0-9]+/g, "_") +
+        "_" +
+        Math.floor(1000 + Math.random() * 9000);
+
+    try {
+      await api.post("/api/form-config", {
+        section: sectionId,
+        label: field.label,
+        name: baseName,
+        type: field.type,
+        placeholder: field.placeholder || "",
+        required: field.required,
+        options: field.options || [],
+      });
+      return await this.getForm();
+    } catch (err) {
+      console.error("Failed to add field to backend:", err);
+      throw err;
+    }
+  }
+
+  // ✅ Update Field
+  async updateField(
+    sectionId: string,
+    fieldId: string,
+    field: Partial<FormField>
+  ): Promise<FormData> {
+    try {
+      await api.put(`/api/form-config/${fieldId}`, {
+        section: sectionId,
+        label: field.label,
+        type: field.type,
+        placeholder: field.placeholder,
+        required: field.required,
+        options: field.options,
+      });
+      return await this.getForm();
+    } catch (err) {
+      console.error("Failed to update field on backend:", err);
+      throw err;
+    }
+  }
+
+  // ✅ Delete Field
+  async deleteField(_sectionId: string, fieldId: string): Promise<FormData> {
+    try {
+      await api.delete(`/api/form-config/${fieldId}`);
+      return await this.getForm();
+    } catch (err) {
+      console.error("Failed to delete field on backend:", err);
+      throw err;
+    }
+  }
+
+  // ✅ Reorder Fields
+  async reorderFields(
+    _sectionId: string,
+    _fieldIds: string[]
+  ): Promise<FormData> {
+    // Return current form since order is preserved in UI
+    return this.getFromLocal();
   }
 
   // ✅ Add Section
-  async addSection(title: string, description?: string): Promise<FormData> {
-    try {
-      const res = await api.post("/api/form-builder/sections", { title, description });
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
-      }
-    } catch (err) {
-      console.error("Failed to add section on server:", err);
+  async addSection(title: string, _description?: string): Promise<FormData> {
+    const current = await this.getForm();
+    if (current.sections.some((s) => s.title.toLowerCase() === title.trim().toLowerCase())) {
+      return current;
     }
-    // Local fallback
-    const current = this.getFromLocal();
     const newSection: FormSection = {
-      id: `section_${Date.now()}`,
+      id: title.trim(),
       title: title.trim(),
-      description: description?.trim() || "",
+      description: _description?.trim() || `Fields under ${title.trim()}`,
       order: current.sections.length,
       fields: [],
     };
@@ -310,207 +584,208 @@ export class FormBuilderRepo {
   }
 
   // ✅ Update Section
-  async updateSection(sectionId: string, title: string, description?: string): Promise<FormData> {
-    try {
-      const res = await api.put(`/api/form-builder/sections/${sectionId}`, { title, description });
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
+  async updateSection(
+    sectionId: string,
+    title: string,
+    _description?: string
+  ): Promise<FormData> {
+    const current = await this.getForm();
+    const section = current.sections.find((s) => s.id === sectionId);
+    if (!section) return current;
+
+    // Update all fields in this section to new section name if title changed
+    if (section.title !== title.trim()) {
+      for (const field of section.fields) {
+        try {
+          await api.put(`/api/form-config/${field.id}`, {
+            section: title.trim(),
+          });
+        } catch (err) {
+          console.warn(`Failed to update section name for field ${field.id}:`, err);
+        }
       }
-    } catch (err) {
-      console.error("Failed to update section on server:", err);
     }
-    const current = this.getFromLocal();
-    const updated: FormData = {
-      ...current,
-      sections: current.sections.map((s) =>
-        s.id === sectionId ? { ...s, title: title.trim(), description: description?.trim() || "" } : s
-      ),
-    };
-    this.saveToLocal(updated);
-    return updated;
+    return await this.getForm();
   }
 
   // ✅ Delete Section
   async deleteSection(sectionId: string): Promise<FormData> {
-    try {
-      const res = await api.delete(`/api/form-builder/sections/${sectionId}`);
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
-      }
-    } catch (err) {
-      console.error("Failed to delete section on server:", err);
-    }
-    const current = this.getFromLocal();
-    const updated: FormData = {
-      ...current,
-      sections: current.sections
-        .filter((s) => s.id !== sectionId)
-        .map((s, idx) => ({ ...s, order: idx })),
-    };
-    this.saveToLocal(updated);
-    return updated;
-  }
-
-  // ✅ Add Field
-  async addField(
-    sectionId: string,
-    field: Omit<FormField, "id" | "order">
-  ): Promise<FormData> {
-    try {
-      const res = await api.post(`/api/form-builder/sections/${sectionId}/fields`, field);
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
-      }
-    } catch (err) {
-      console.error("Failed to add field on server:", err);
-    }
-    const current = this.getFromLocal();
+    const current = await this.getForm();
     const section = current.sections.find((s) => s.id === sectionId);
     if (!section) return current;
 
-    const baseId = field.label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-    const newField: FormField = {
-      ...field,
-      id: `${baseId}_${Date.now()}`,
-      order: section.fields.length,
-    };
-
-    const updated: FormData = {
-      ...current,
-      sections: current.sections.map((s) =>
-        s.id === sectionId ? { ...s, fields: [...s.fields, newField] } : s
-      ),
-    };
-    this.saveToLocal(updated);
-    return updated;
-  }
-
-  // ✅ Update Field
-  async updateField(
-    sectionId: string,
-    fieldId: string,
-    field: Partial<FormField>
-  ): Promise<FormData> {
-    try {
-      const res = await api.put(`/api/form-builder/sections/${sectionId}/fields/${fieldId}`, field);
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
+    for (const field of section.fields) {
+      try {
+        await api.delete(`/api/form-config/${field.id}`);
+      } catch (err) {
+        console.warn(`Failed to delete field ${field.id}:`, err);
       }
-    } catch (err) {
-      console.error("Failed to update field on server:", err);
     }
-    const current = this.getFromLocal();
-    const updated: FormData = {
-      ...current,
-      sections: current.sections.map((s) =>
-        s.id === sectionId
-          ? {
-              ...s,
-              fields: s.fields.map((f) => (f.id === fieldId ? { ...f, ...field } : f)),
-            }
-          : s
-      ),
-    };
-    this.saveToLocal(updated);
-    return updated;
+    return await this.getForm();
   }
 
-  // ✅ Delete Field
-  async deleteField(sectionId: string, fieldId: string): Promise<FormData> {
-    try {
-      const res = await api.delete(`/api/form-builder/sections/${sectionId}/fields/${fieldId}`);
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
-      }
-    } catch (err) {
-      console.error("Failed to delete field on server:", err);
-    }
-    const current = this.getFromLocal();
-    const updated: FormData = {
-      ...current,
-      sections: current.sections.map((s) =>
-        s.id === sectionId
-          ? {
-              ...s,
-              fields: s.fields
-                .filter((f) => f.id !== fieldId)
-                .map((f, idx) => ({ ...f, order: idx })),
-            }
-          : s
-      ),
-    };
-    this.saveToLocal(updated);
-    return updated;
-  }
-
-  // ✅ Reorder Fields
-  async reorderFields(sectionId: string, fieldIds: string[]): Promise<FormData> {
-    try {
-      const res = await api.put(`/api/form-builder/sections/${sectionId}/reorder`, { fieldIds });
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
-      }
-    } catch (err) {
-      console.error("Failed to reorder fields on server:", err);
-    }
-    const current = this.getFromLocal();
-    const section = current.sections.find((s) => s.id === sectionId);
-    if (!section) return current;
-
-    const map = new Map(section.fields.map((f) => [f.id, f]));
-    const reordered: FormField[] = [];
-    fieldIds.forEach((id, index) => {
-      const f = map.get(id);
-      if (f) {
-        reordered.push({ ...f, order: index });
-        map.delete(id);
-      }
-    });
-    map.forEach((f) => {
-      reordered.push({ ...f, order: reordered.length });
-    });
-
-    const updated: FormData = {
-      ...current,
-      sections: current.sections.map((s) =>
-        s.id === sectionId ? { ...s, fields: reordered } : s
-      ),
-    };
-    this.saveToLocal(updated);
-    return updated;
-  }
-
-  // ✅ Reset Form to default
+  // ✅ Reset Form to Default (Seeds all 14 standard fields)
   async resetForm(): Promise<FormData> {
     try {
-      const res = await api.post("/api/form-builder/reset");
-      if (res.data?.form) {
-        this.saveToLocal(res.data.form);
-        return res.data.form;
+      const res = await api.get("/api/form-config");
+      const grouped = res.data?.data || {};
+      const allFields: any[] = Object.values(grouped).flat();
+
+      for (const f of allFields) {
+        if (f._id) {
+          try {
+            await api.delete(`/api/form-config/${f._id}`);
+          } catch {
+            // Ignore error
+          }
+        }
       }
+
+      await this.seedDefaultFields();
+      return await this.getForm();
     } catch (err) {
       console.error("Failed to reset form on server:", err);
+      return this.getFromLocal();
     }
-    this.saveToLocal(initialDefaultForm);
-    return initialDefaultForm;
   }
 
-  // ✅ Submit public application
+  // ✅ Submit Registration Application
   async submitApplication(formData: Record<string, any>) {
-    const res = await api.post("/api/form-builder/submit", { formData });
-    return res.data;
-  }
+    // Map standard fields expected by backend InternSubmission model
+    const payload: Record<string, any> = {
+      fullName:
+        formData.fullName ||
+        formData.name ||
+        formData.full_name ||
+        formData["Full name"] ||
+        formData["Full Name"] ||
+        "",
+      dateOfBirth:
+        formData.dateOfBirth ||
+        formData.dob ||
+        formData.date_of_birth ||
+        formData["Date of birth"] ||
+        "",
+      gender: formData.gender || formData.Gender || "",
+      address: formData.address || formData.Address || "",
+      emailAddress:
+        formData.emailAddress ||
+        formData.email ||
+        formData.email_address ||
+        formData["Email address"] ||
+        "",
+      phoneNumber:
+        formData.phoneNumber ||
+        formData.phone ||
+        formData.phone_number ||
+        formData["Phone number"] ||
+        "",
+      guardianNumber:
+        formData.guardianNumber ||
+        formData.guardian_phone ||
+        formData.guardian_number ||
+        formData["Guardian number"] ||
+        "",
+      cnicNumber:
+        formData.cnicNumber ||
+        formData.cnic ||
+        formData.cnic_number ||
+        formData["CNIC number"] ||
+        "",
+      fatherOrGuardianName:
+        formData.fatherOrGuardianName ||
+        formData.father_name ||
+        formData.father_guardian_name ||
+        formData["Father/Guardian name"] ||
+        "",
+      course: formData.course || formData.Course || "",
+      teacherName:
+        formData.teacherName ||
+        formData.teacher ||
+        formData.teacher_name ||
+        formData["Teacher name"] ||
+        "",
+      campus: formData.campus || formData.Campus || "",
+      obtainedMarks:
+        formData.obtainedMarks ||
+        formData.marks ||
+        formData.obtained_marks ||
+        formData["Obtained marks"] ||
+        "",
+      aboutYou:
+        formData.aboutYou ||
+        formData.about ||
+        formData.about_yourself ||
+        formData["About yourself"] ||
+        "",
+      dynamicData: {},
+    };
 
-  // ✅ Get submissions
-  async getSubmissions(page = 1, limit = 20) {
-    const res = await api.get(`/api/form-builder/submissions?page=${page}&limit=${limit}`);
-    return res.data;
+    const standardKeys = new Set([
+      "fullName",
+      "name",
+      "full_name",
+      "Full name",
+      "Full Name",
+      "dateOfBirth",
+      "dob",
+      "date_of_birth",
+      "Date of birth",
+      "gender",
+      "Gender",
+      "address",
+      "Address",
+      "emailAddress",
+      "email",
+      "email_address",
+      "Email address",
+      "phoneNumber",
+      "phone",
+      "phone_number",
+      "Phone number",
+      "guardianNumber",
+      "guardian_phone",
+      "guardian_number",
+      "Guardian number",
+      "cnicNumber",
+      "cnic",
+      "cnic_number",
+      "CNIC number",
+      "fatherOrGuardianName",
+      "father_name",
+      "father_guardian_name",
+      "Father/Guardian name",
+      "course",
+      "Course",
+      "teacherName",
+      "teacher",
+      "teacher_name",
+      "Teacher name",
+      "campus",
+      "Campus",
+      "obtainedMarks",
+      "marks",
+      "obtained_marks",
+      "Obtained marks",
+      "aboutYou",
+      "about",
+      "about_yourself",
+      "About yourself",
+    ]);
+
+    // Store custom dynamic fields in dynamicData
+    Object.entries(formData).forEach(([key, value]) => {
+      if (!standardKeys.has(key)) {
+        payload.dynamicData[key] = value;
+      }
+    });
+
+    const res = await api.post("/api/registration", payload);
+    return {
+      ...res.data,
+      applicationNumber:
+        res.data?.data?._id || `APP-${Date.now().toString().slice(-6)}`,
+    };
   }
 }
 

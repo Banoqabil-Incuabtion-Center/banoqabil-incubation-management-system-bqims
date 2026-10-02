@@ -77,27 +77,83 @@ export default function PublicRegistration() {
   const currentSection: FormSection | undefined = form.sections[currentStep];
   const totalSteps = form.sections.length;
 
-  const handleInputChange = (fieldId: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [fieldId]: value }));
+  const handleInputChange = (
+    fieldKey: string,
+    value: any,
+    fallbackId?: string
+  ) => {
+    setFormData((prev) => {
+      const next = { ...prev, [fieldKey]: value };
+      if (fallbackId && fallbackId !== fieldKey) {
+        next[fallbackId] = value;
+      }
+      return next;
+    });
+
     // Clear validation error when user types
-    if (errors[fieldId]) {
+    if (errors[fieldKey] || (fallbackId && errors[fallbackId])) {
       setErrors((prev) => {
         const copy = { ...prev };
-        delete copy[fieldId];
+        delete copy[fieldKey];
+        if (fallbackId) delete copy[fallbackId];
         return copy;
       });
     }
   };
 
-  const handleCheckboxChange = (fieldId: string, option: string, checked: boolean) => {
-    const existing: string[] = Array.isArray(formData[fieldId]) ? formData[fieldId] : [];
+  // CNIC input formatter: 42101-1234567-1
+  const handleCnicChange = (
+    fieldKey: string,
+    rawVal: string,
+    fallbackId?: string
+  ) => {
+    let val = rawVal.replace(/\D/g, "");
+    if (val.length > 13) val = val.substring(0, 13);
+    let formatted = val;
+    if (val.length > 5 && val.length <= 12) {
+      formatted = `${val.substring(0, 5)}-${val.substring(5)}`;
+    } else if (val.length > 12) {
+      formatted = `${val.substring(0, 5)}-${val.substring(5, 12)}-${val.substring(12, 13)}`;
+    }
+    handleInputChange(fieldKey, formatted, fallbackId);
+  };
+
+  // Phone input formatter: 300 1234567
+  const handlePhoneChange = (
+    fieldKey: string,
+    rawVal: string,
+    fallbackId?: string
+  ) => {
+    let val = rawVal.replace(/\D/g, "");
+    if (val.startsWith("92") && val.length > 10) {
+      val = val.substring(2);
+    } else if (val.startsWith("0") && val.length > 10) {
+      val = val.substring(1);
+    }
+    if (val.length > 10) val = val.substring(0, 10);
+    let formatted = val;
+    if (val.length > 3) {
+      formatted = `${val.substring(0, 3)} ${val.substring(3)}`;
+    }
+    handleInputChange(fieldKey, formatted, fallbackId);
+  };
+
+  const handleCheckboxChange = (
+    fieldKey: string,
+    option: string,
+    checked: boolean,
+    fallbackId?: string
+  ) => {
+    const existing: string[] = Array.isArray(formData[fieldKey])
+      ? formData[fieldKey]
+      : [];
     let updated: string[];
     if (checked) {
       updated = [...existing, option];
     } else {
       updated = existing.filter((item) => item !== option);
     }
-    handleInputChange(fieldId, updated);
+    handleInputChange(fieldKey, updated, fallbackId);
   };
 
   // Validate the current step fields
@@ -106,19 +162,53 @@ export default function PublicRegistration() {
     const newErrors: Record<string, string> = {};
 
     currentSection.fields.forEach((field) => {
+      const key = field.name || field.id;
+      const val =
+        formData[key] !== undefined ? formData[key] : formData[field.id];
+
       if (field.required) {
-        const val = formData[field.id];
         if (
           val === undefined ||
           val === null ||
           val === "" ||
           (Array.isArray(val) && val.length === 0)
         ) {
-          newErrors[field.id] = `${field.label} is required`;
-        } else if (field.type === "email" && typeof val === "string") {
+          newErrors[key] = `${field.label} is required`;
+        }
+      }
+
+      // Format-specific validations when value is present
+      if (val && typeof val === "string" && val.trim().length > 0) {
+        if (field.type === "email") {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(val)) {
-            newErrors[field.id] = "Please enter a valid email address";
+          if (!emailRegex.test(val.trim())) {
+            newErrors[key] = "Please enter a valid email address";
+          }
+        } else if (
+          field.name === "cnicNumber" ||
+          field.name === "cnic" ||
+          field.label.toLowerCase().includes("cnic")
+        ) {
+          const clean = val.replace(/[^0-9]/g, "");
+          if (clean.length !== 13) {
+            newErrors[key] = "CNIC must contain exactly 13 digits (e.g. 42101-1234567-1)";
+          } else if (clean[0] !== "4") {
+            newErrors[key] = "CNIC must start with 4 (e.g. 42101-1234567-1)";
+          }
+        } else if (field.type === "phone") {
+          const digits = val.replace(/\D/g, "");
+          if (digits.length !== 10) {
+            newErrors[key] = "Phone number must contain 10 digits (e.g. 300 1234567)";
+          } else if (digits[0] !== "3") {
+            newErrors[key] = "Pakistani mobile number must start with 3 (e.g. 300 1234567)";
+          }
+        } else if (
+          field.name === "aboutYou" ||
+          field.name === "about" ||
+          field.label.toLowerCase().includes("about")
+        ) {
+          if (val.trim().length < 10) {
+            newErrors[key] = "Please enter at least 10 characters.";
           }
         }
       }
@@ -126,7 +216,7 @@ export default function PublicRegistration() {
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
-      toast.error("Please fill in all required fields before proceeding.");
+      toast.error("Please fill in all required fields correctly before proceeding.");
       return false;
     }
     return true;
@@ -155,7 +245,8 @@ export default function PublicRegistration() {
       setSubmitting(true);
       const res = await formBuilderRepo.submitApplication(formData);
       setSubmittedApp({
-        applicationNumber: res.applicationNumber || `APP-${Date.now().toString().slice(-6)}`,
+        applicationNumber:
+          res.applicationNumber || `APP-${Date.now().toString().slice(-6)}`,
         submittedAt: new Date().toLocaleString(),
       });
       toast.success("Application submitted successfully!");
@@ -176,18 +267,35 @@ export default function PublicRegistration() {
 
   // Render individual dynamic field based on field.type
   const renderFieldInput = (field: FormField) => {
-    const value = formData[field.id] ?? "";
-    const hasError = !!errors[field.id];
+    const key = field.name || field.id;
+    const value = formData[key] ?? formData[field.id] ?? "";
+    const hasError = !!errors[key] || !!errors[field.id];
+    const isCnic =
+      field.name === "cnicNumber" ||
+      field.name === "cnic" ||
+      field.label.toLowerCase().includes("cnic");
+    const isUppercase =
+      field.name === "fullName" ||
+      field.name === "name" ||
+      field.name === "fatherOrGuardianName" ||
+      field.name === "father_name" ||
+      field.label.toLowerCase().includes("name");
 
     switch (field.type) {
       case "textarea":
         return (
           <Textarea
-            id={field.id}
+            id={key}
             value={value}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-            className={hasError ? "border-destructive focus-visible:ring-destructive" : ""}
+            onChange={(e) => handleInputChange(key, e.target.value, field.id)}
+            placeholder={
+              field.placeholder || `Enter ${field.label.toLowerCase()}`
+            }
+            className={
+              hasError
+                ? "border-destructive focus-visible:ring-destructive"
+                : ""
+            }
             rows={4}
           />
         );
@@ -196,15 +304,21 @@ export default function PublicRegistration() {
         return (
           <Select
             value={value}
-            onValueChange={(val) => handleInputChange(field.id, val)}
+            onValueChange={(val) => handleInputChange(key, val, field.id)}
           >
             <SelectTrigger
-              id={field.id}
-              className={`w-full ${hasError ? "border-destructive focus:ring-destructive" : ""}`}
+              id={key}
+              className={`w-full ${
+                hasError ? "border-destructive focus:ring-destructive" : ""
+              }`}
             >
-              <SelectValue placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`} />
+              <SelectValue
+                placeholder={
+                  field.placeholder || `Select ${field.label.toLowerCase()}`
+                }
+              />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-72">
               {field.options && field.options.length > 0 ? (
                 field.options.map((opt, i) => (
                   <SelectItem key={i} value={opt}>
@@ -224,20 +338,25 @@ export default function PublicRegistration() {
         return (
           <RadioGroup
             value={value}
-            onValueChange={(val) => handleInputChange(field.id, val)}
+            onValueChange={(val) => handleInputChange(key, val, field.id)}
             className="flex flex-wrap gap-4 pt-1"
           >
             {field.options && field.options.length > 0 ? (
               field.options.map((opt, i) => (
                 <div key={i} className="flex items-center space-x-2">
-                  <RadioGroupItem value={opt} id={`${field.id}-${i}`} />
-                  <Label htmlFor={`${field.id}-${i}`} className="text-sm cursor-pointer font-normal">
+                  <RadioGroupItem value={opt} id={`${key}-${i}`} />
+                  <Label
+                    htmlFor={`${key}-${i}`}
+                    className="text-sm cursor-pointer font-normal"
+                  >
                     {opt}
                   </Label>
                 </div>
               ))
             ) : (
-              <span className="text-xs text-muted-foreground">No options configured</span>
+              <span className="text-xs text-muted-foreground">
+                No options configured
+              </span>
             )}
           </RadioGroup>
         );
@@ -250,19 +369,29 @@ export default function PublicRegistration() {
               field.options.map((opt, i) => (
                 <div key={i} className="flex items-center space-x-2">
                   <Checkbox
-                    id={`${field.id}-${i}`}
+                    id={`${key}-${i}`}
                     checked={checkedList.includes(opt)}
                     onCheckedChange={(checked) =>
-                      handleCheckboxChange(field.id, opt, Boolean(checked))
+                      handleCheckboxChange(
+                        key,
+                        opt,
+                        Boolean(checked),
+                        field.id
+                      )
                     }
                   />
-                  <Label htmlFor={`${field.id}-${i}`} className="text-sm cursor-pointer font-normal">
+                  <Label
+                    htmlFor={`${key}-${i}`}
+                    className="text-sm cursor-pointer font-normal"
+                  >
                     {opt}
                   </Label>
                 </div>
               ))
             ) : (
-              <span className="text-xs text-muted-foreground">No options configured</span>
+              <span className="text-xs text-muted-foreground">
+                No options configured
+              </span>
             )}
           </div>
         );
@@ -270,85 +399,142 @@ export default function PublicRegistration() {
       case "date":
         return (
           <Input
-            id={field.id}
+            id={key}
             type="date"
             value={value}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
-            className={hasError ? "border-destructive focus-visible:ring-destructive" : ""}
+            onChange={(e) => handleInputChange(key, e.target.value, field.id)}
+            className={
+              hasError
+                ? "border-destructive focus-visible:ring-destructive"
+                : ""
+            }
           />
         );
 
       case "number":
         return (
           <Input
-            id={field.id}
+            id={key}
             type="number"
             value={value}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-            className={hasError ? "border-destructive focus-visible:ring-destructive" : ""}
+            min={0}
+            step="any"
+            onChange={(e) => handleInputChange(key, e.target.value, field.id)}
+            placeholder={
+              field.placeholder || `Enter ${field.label.toLowerCase()}`
+            }
+            className={
+              hasError
+                ? "border-destructive focus-visible:ring-destructive"
+                : ""
+            }
           />
         );
 
       case "email":
         return (
           <Input
-            id={field.id}
+            id={key}
             type="email"
             value={value}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            onChange={(e) => handleInputChange(key, e.target.value, field.id)}
             placeholder={field.placeholder || "example@domain.com"}
-            className={hasError ? "border-destructive focus-visible:ring-destructive" : ""}
+            className={
+              hasError
+                ? "border-destructive focus-visible:ring-destructive"
+                : ""
+            }
           />
         );
 
       case "phone":
         return (
-          <Input
-            id={field.id}
-            type="tel"
-            value={value}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
-            placeholder={field.placeholder || "0300-1234567"}
-            className={hasError ? "border-destructive focus-visible:ring-destructive" : ""}
-          />
+          <div className="flex items-center relative w-full">
+            <span className="absolute left-3 text-sm font-semibold text-muted-foreground pointer-events-none z-10 select-none">
+              +92
+            </span>
+            <Input
+              id={key}
+              type="tel"
+              value={value}
+              maxLength={12}
+              onChange={(e) => handlePhoneChange(key, e.target.value, field.id)}
+              placeholder={field.placeholder || "300 1234567"}
+              className={`pl-12 ${
+                hasError
+                  ? "border-destructive focus-visible:ring-destructive"
+                  : ""
+              }`}
+            />
+          </div>
         );
 
       case "password":
         return (
           <Input
-            id={field.id}
+            id={key}
             type="password"
             value={value}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            onChange={(e) => handleInputChange(key, e.target.value, field.id)}
             placeholder={field.placeholder || "Enter password"}
-            className={hasError ? "border-destructive focus-visible:ring-destructive" : ""}
+            className={
+              hasError
+                ? "border-destructive focus-visible:ring-destructive"
+                : ""
+            }
           />
         );
 
       case "file":
         return (
           <Input
-            id={field.id}
+            id={key}
             type="file"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              handleInputChange(field.id, file ? file.name : "");
+              handleInputChange(key, file ? file.name : "", field.id);
             }}
-            className={hasError ? "border-destructive focus-visible:ring-destructive" : ""}
+            className={
+              hasError
+                ? "border-destructive focus-visible:ring-destructive"
+                : ""
+            }
           />
         );
 
       case "text":
       default:
+        if (isCnic) {
+          return (
+            <Input
+              id={key}
+              type="text"
+              value={value}
+              maxLength={15}
+              onChange={(e) => handleCnicChange(key, e.target.value, field.id)}
+              placeholder={field.placeholder || "e.g. 42101-1234567-1"}
+              className={
+                hasError
+                  ? "border-destructive focus-visible:ring-destructive"
+                  : ""
+              }
+            />
+          );
+        }
         return (
           <Input
-            id={field.id}
+            id={key}
             type="text"
             value={value}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-            className={hasError ? "border-destructive focus-visible:ring-destructive" : ""}
+            onChange={(e) => handleInputChange(key, e.target.value, field.id)}
+            placeholder={
+              field.placeholder || `Enter ${field.label.toLowerCase()}`
+            }
+            className={`${isUppercase ? "uppercase placeholder:normal-case" : ""} ${
+              hasError
+                ? "border-destructive focus-visible:ring-destructive"
+                : ""
+            }`}
           />
         );
     }
@@ -380,8 +566,8 @@ export default function PublicRegistration() {
               Registration Submitted!
             </h2>
             <p className="text-sm text-muted-foreground">
-              Thank you for applying. Your application has been registered in the
-              BanoQabil Incubation Management System.
+              Thank you for applying to Bano Qabil. Your internship application
+              has been registered in the system.
             </p>
           </div>
 
@@ -524,28 +710,39 @@ export default function PublicRegistration() {
           <form onSubmit={handleSubmit}>
             <CardContent className="p-5 sm:p-6 space-y-5">
               {currentSection && currentSection.fields.length > 0 ? (
-                currentSection.fields.map((field) => (
-                  <div key={field.id} className="space-y-1.5">
-                    <Label htmlFor={field.id} className="flex items-center gap-1 text-sm font-medium">
-                      <span>{field.label}</span>
-                      {field.required ? (
-                        <span className="text-destructive font-bold" title="Required">*</span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground font-normal ml-1">
-                          (Optional)
-                        </span>
+                currentSection.fields.map((field) => {
+                  const key = field.name || field.id;
+                  return (
+                    <div key={field.id} className="space-y-1.5">
+                      <Label
+                        htmlFor={key}
+                        className="flex items-center gap-1 text-sm font-medium"
+                      >
+                        <span>{field.label}</span>
+                        {field.required ? (
+                          <span
+                            className="text-destructive font-bold"
+                            title="Required"
+                          >
+                            *
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground font-normal ml-1">
+                            (Optional)
+                          </span>
+                        )}
+                      </Label>
+
+                      {renderFieldInput(field)}
+
+                      {(errors[key] || errors[field.id]) && (
+                        <p className="text-xs text-destructive mt-1 font-medium">
+                          {errors[key] || errors[field.id]}
+                        </p>
                       )}
-                    </Label>
-
-                    {renderFieldInput(field)}
-
-                    {errors[field.id] && (
-                      <p className="text-xs text-destructive mt-1 font-medium">
-                        {errors[field.id]}
-                      </p>
-                    )}
-                  </div>
-                ))
+                    </div>
+                  );
+                })
               ) : (
                 <div className="py-6 text-center text-sm text-muted-foreground">
                   No fields defined in this section.

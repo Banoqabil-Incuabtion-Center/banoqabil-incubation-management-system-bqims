@@ -991,7 +991,7 @@ export default function FormBuilder() {
             {isOptionType(fieldType) && (
               <div className="space-y-2 border-t pt-3">
                 <div className="flex items-center justify-between">
-                  <Label>Options</Label>
+                  <Label>Options ({fieldOptions.length})</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1003,7 +1003,7 @@ export default function FormBuilder() {
                     Add Option
                   </Button>
                 </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-64 sm:max-h-80 overflow-y-auto pr-1">
                   {fieldOptions.map((opt, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       <Input
@@ -1141,7 +1141,7 @@ export default function FormBuilder() {
             {isOptionType(fieldType) && (
               <div className="space-y-2 border-t pt-3">
                 <div className="flex items-center justify-between">
-                  <Label>Options</Label>
+                  <Label>Options ({fieldOptions.length})</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1153,7 +1153,7 @@ export default function FormBuilder() {
                     Add Option
                   </Button>
                 </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-64 sm:max-h-80 overflow-y-auto pr-1">
                   {fieldOptions.map((opt, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       <Input
