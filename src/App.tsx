@@ -5,6 +5,7 @@ import Students from "./Pages/Students";
 import Posts from "./Pages/Posts";
 import Teams from "./Pages/Teams";
 import Projects from "./Pages/Projects";
+import Board from "./Pages/Board";
 import Managers from "./Pages/Managers";
 import Attendance from "./Pages/Attendance";
 import AttendanceSettings from "./Pages/AttendanceSettings";
@@ -33,6 +34,7 @@ const App = () => {
               <Route path="/admin/posts" element={<Posts />} />
               <Route path="/admin/teams" element={<Teams />} />
               <Route path="/admin/projects" element={<Projects />} />
+              <Route path="/admin/board" element={<Board />} />
               <Route path="/admin/pm" element={<Managers />} />
               <Route path="/admin/attendance" element={<Attendance />} />
               <Route path="/admin/attendance/settings" element={<AttendanceSettings />} />

@@ -9,6 +9,7 @@ import {
   IconFolder,
   IconHelp,
   IconInnerShadowTop,
+  IconLayoutKanban,
   IconListDetails,
   IconSettings,
   IconUsers,
@@ -56,6 +57,11 @@ const data = {
       title: "Projects",
       url: "/admin/projects",
       icon: IconFolder,
+    },
+    {
+      title: "Task Board",
+      url: "/admin/board",
+      icon: IconLayoutKanban,
     },
     {
       title: "Teams",
