@@ -87,19 +87,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// Available field type definitions
+// Available field type definitions. Only types the backend form-config enum accepts and the
+// banoqabil.online landing form renders; "password" and "file" stay in FieldType for old data only.
 const FIELD_TYPES: { value: FieldType; label: string; description: string }[] = [
   { value: "text", label: "Text", description: "Short single-line text" },
   { value: "number", label: "Number", description: "Numeric values" },
   { value: "email", label: "Email", description: "Email address format" },
-  { value: "password", label: "Password", description: "Hidden password input" },
   { value: "date", label: "Date", description: "Calendar date picker" },
   { value: "phone", label: "Phone", description: "Phone number input" },
   { value: "textarea", label: "Textarea", description: "Multi-line paragraph text" },
   { value: "checkbox", label: "Checkbox", description: "Multiple option selection" },
   { value: "radio", label: "Radio", description: "Single option radio buttons" },
   { value: "select", label: "Select / Dropdown", description: "Dropdown option selection" },
-  { value: "file", label: "File Upload", description: "File attachment" },
 ];
 
 function getFieldTypeLabel(type: FieldType): string {

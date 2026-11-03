@@ -11,6 +11,7 @@ import Attendance from "./Pages/Attendance";
 import AttendanceSettings from "./Pages/AttendanceSettings";
 import AdminCalendar from "./Pages/AdminCalendar";
 import FormBuilder from "./Pages/FormBuilder";
+import Applications from "./Pages/Applications";
 import PublicRegistration from "./Pages/PublicRegistration";
 import UserLayout from "./components/layout/userLayout";
 import PrivateRoute from "./auth/PrivateRoute";
@@ -33,6 +34,7 @@ const App = () => {
             <Route path="/" element={<PrivateRoute> <UserLayout /> </PrivateRoute>}>
               <Route index element={<Page />} />
               <Route path="/admin/students" element={<Students />} />
+              <Route path="/admin/applications" element={<Applications />} />
               <Route path="/admin/form-builder" element={<FormBuilder />} />
               <Route path="/admin/posts" element={<Posts />} />
               <Route path="/admin/teams" element={<Teams />} />

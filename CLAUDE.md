@@ -61,6 +61,12 @@ The dnd-kit wiring has a few load-bearing details:
 
 **Real-time is backend-only right now.** The API emits `task:created/updated/moved/deleted` into a `project:<id>` socket room, but this app has no `socket.io-client` dependency so nothing subscribes. To turn on live multi-admin sync: `npm i socket.io-client`, connect with `auth: { token }` against `VITE_SOCKET_URL`, `emit("join:project", projectId)`, and apply the four events to board state. The student app's `src/lib/socket.ts` is a working reference for the connection singleton.
 
+## Applications (registration form)
+
+`src/Pages/Applications.tsx` + `registrationRepo.ts` list the internship applications posted from banoqabil.online (`/api/registration`, admin-only). Filtering, search and pagination are server-side; the stat cards use the response's `statusCounts` and double as status filters. Course/campus filter options are read from `/api/form-config`, the same source the landing form renders, so they stay in sync with the Form Builder. CSV export pages through the list 100 rows at a time and builds the file client-side (UTF-8 BOM, formula-prefix guard). Delete is a backend soft delete, which also frees that CNIC to apply again.
+
+`FormBuilder.tsx`'s `FIELD_TYPES` must stay within the backend form-config `type` enum; `password`/`file` were removed from the picker because neither the backend nor the landing form supports them.
+
 ## Attendance settings
 
 `src/Pages/AttendanceSettings.tsx` edits the backend's **singleton** settings document (shift hours, late/early thresholds, `minHoursForPresent`, working days, timezone, allowed IPs, early check-in window). There is exactly one such document server-side — the UI is editing global config, not per-user rows. Changing it retroactively affects how the nightly absence cron classifies attendance.
