@@ -14,6 +14,7 @@ import {
   IconSettings,
   IconUsers,
   IconCalendar,
+  IconForms,
 } from "@tabler/icons-react"
 
 
@@ -47,6 +48,11 @@ const data = {
       title: "Students",
       url: "/admin/students",
       icon: IconListDetails,
+    },
+    {
+      title: "Form Builder",
+      url: "/admin/form-builder",
+      icon: IconForms,
     },
     {
       title: "Post",
